@@ -1,0 +1,13 @@
+{
+  "name": "atlas-prompt-compiler",
+  "version": "1.0.0",
+  "description": "Extract design intent from Figma frames to generate structured prompts",
+  "scripts": {
+    "build": "node build.js",
+    "watch": "node build.js --watch"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.90.0",
+    "typescript": "^5.3.3"
+  }
+}

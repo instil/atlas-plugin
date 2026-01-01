@@ -1,0 +1,11 @@
+{
+  "name": "Instil Figma > v0 Prompt Compiler",
+  "id": "prompt-compiler",
+  "api": "1.0.0",
+  "main": "dist/code.js",
+  "ui": "src/ui.html",
+  "editorType": ["figma"],
+  "networkAccess": {
+    "allowedDomains": ["none"]
+  }
+}
