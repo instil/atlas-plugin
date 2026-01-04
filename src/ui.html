@@ -101,6 +101,33 @@
       font-size: 12px;
       color: #333;
     }
+
+    .collapsible-header {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+    }
+
+    .collapsible-header:hover {
+      background: #ebebeb;
+    }
+
+    .collapse-icon {
+      font-size: 10px;
+      transition: transform 0.2s ease;
+      color: #999;
+    }
+
+    .collapsible-header.expanded .collapse-icon {
+      transform: rotate(90deg);
+    }
+
+    .collapsible-content {
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
     
     .editor-section-content {
       padding: 16px;
@@ -147,6 +174,53 @@
       margin-top: 4px;
       font-size: 10px;
       color: #999;
+    }
+
+    .color-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 8px;
+      background: #fafafa;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+    }
+
+    .color-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px;
+      background: white;
+      border-radius: 3px;
+      font-size: 11px;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+      flex-shrink: 0;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
+    }
+
+    .color-code {
+      flex: 1;
+      color: #333;
+    }
+
+    .color-role {
+      font-size: 9px;
+      padding: 2px 6px;
+      background: #e8f4fd;
+      color: #0d99ff;
+      border-radius: 3px;
+      text-transform: uppercase;
+      font-weight: 600;
     }
     
     .screenshots-grid {
@@ -223,6 +297,33 @@
       font-size: 11px;
       font-weight: 600;
       color: #666;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header-copy-btn {
+      padding: 6px 12px;
+      background: white;
+      color: #333;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .header-copy-btn:hover {
+      background: #f5f5f5;
+      border-color: #bfbfbf;
+    }
+
+    .header-copy-btn:active {
+      transform: scale(0.98);
     }
     
     .copy-icon {
@@ -257,9 +358,7 @@
     }
     
     .prompt-content {
-      padding: 12px;
-      max-height: calc(100vh - 320px);
-      overflow-y: auto;
+      padding: 0;
       background: white;
     }
     
@@ -270,6 +369,270 @@
       font-size: 10px;
       line-height: 1.6;
       color: #333;
+    }
+    
+    .prompt-textarea {
+      width: 100%;
+      height: 500px;
+      padding: 12px;
+      margin: 0;
+      border: none;
+      border-radius: 0 0 6px 6px;
+      resize: vertical;
+      white-space: pre-wrap;
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+      font-size: 10px;
+      line-height: 1.6;
+      color: #333;
+      background: white;
+    }
+    
+    .prompt-textarea:focus {
+      outline: none;
+      background: #fafafa;
+    }
+    
+    .edit-hint {
+      padding: 8px 12px;
+      background: #fff9e6;
+      border-bottom: 1px solid #ffe58f;
+      font-size: 10px;
+      color: #8c6d1f;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .edit-hint.saved {
+      background: #f0f9ff;
+      border-bottom-color: #91d5ff;
+      color: #0d5f8f;
+    }
+    
+    .stats-panel {
+      padding: 8px 12px;
+      background: #f9f9f9;
+      border-bottom: 1px solid #e5e5e5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: #666;
+      gap: 16px;
+    }
+    
+    .stats-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .stats-value {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .screenshot-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: background 0.15s ease;
+      user-select: none;
+    }
+    
+    .screenshot-toggle:hover {
+      background: #ebebeb;
+    }
+    
+    .screenshot-toggle input[type="checkbox"] {
+      margin: 0;
+      cursor: pointer;
+    }
+    
+    .screenshot-badge {
+      font-weight: 600;
+      color: #0d99ff;
+    }
+    
+    .view-gallery-btn {
+      padding: 4px 8px;
+      background: white;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      font-size: 10px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-left: 4px;
+    }
+    
+    .view-gallery-btn:hover {
+      background: #f5f5f5;
+      border-color: #bfbfbf;
+    }
+    
+    .copy-feedback {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #000;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 2000;
+      display: none;
+      text-align: center;
+      min-width: 300px;
+    }
+    
+    .copy-feedback.visible {
+      display: block;
+      animation: fadeInScale 0.2s ease;
+    }
+    
+    @keyframes fadeInScale {
+      from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+    
+    .copy-feedback-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .copy-feedback-details {
+      font-size: 11px;
+      color: #aaa;
+      margin-bottom: 12px;
+    }
+    
+    .copy-feedback-toggle {
+      font-size: 11px;
+      color: #0d99ff;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    
+    .copy-feedback-toggle:hover {
+      color: #40a9ff;
+    }
+    
+    .screenshot-gallery-compact {
+      display: none;
+      padding: 12px;
+      background: #fafafa;
+      border-top: 1px solid #e5e5e5;
+      border-bottom: 1px solid #e5e5e5;
+    }
+    
+    .screenshot-gallery-compact.visible {
+      display: block;
+    }
+    
+    .section-controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    
+    .btn-small {
+      padding: 6px 12px;
+      border: 1px solid #d9d9d9;
+      border-radius: 4px;
+      background: white;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      color: #333;
+    }
+    
+    .btn-small:hover {
+      background: #f5f5f5;
+      border-color: #bfbfbf;
+    }
+    
+    .btn-small:active {
+      transform: scale(0.97);
+    }
+    
+    .export-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+    
+    .export-menu {
+      display: none;
+      position: fixed;
+      bottom: auto;
+      right: auto;
+      background: white;
+      border: 1px solid #e5e5e5;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      min-width: 180px;
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .export-menu.visible {
+      display: block;
+    }
+    
+    .export-menu-item {
+      padding: 8px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .export-menu-item:last-child {
+      border-bottom: none;
+      border-radius: 0 0 6px 6px;
+    }
+    
+    .export-menu-item:first-child {
+      border-radius: 6px 6px 0 0;
+    }
+    
+    .export-menu-item:hover {
+      background: #f5f5f5;
+    }
+    
+    .export-menu-item-icon {
+      width: 16px;
+      text-align: center;
+    }
+    
+    .kbd {
+      display: inline-block;
+      padding: 2px 6px;
+      font-size: 9px;
+      font-family: 'SF Mono', Monaco, monospace;
+      background: #f5f5f5;
+      border: 1px solid #d9d9d9;
+      border-radius: 3px;
+      margin-left: auto;
+      color: #666;
     }
     
     .error {
@@ -289,6 +652,9 @@
       flex-shrink: 0;
       display: flex;
       gap: 8px;
+      overflow: visible;
+      position: relative;
+      z-index: 10;
     }
     
     .action-bar button {
@@ -434,6 +800,44 @@
   <script>
     // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', () => {
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        // Detect platform: Mac uses Cmd (metaKey), Windows/Linux use Ctrl
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        const modifier = isMac ? e.metaKey : e.ctrlKey;
+        
+        // Cmd/Ctrl + K - Copy with screenshots
+        if (modifier && e.key === 'k') {
+          e.preventDefault();
+          if (window.promptData) {
+            copyPrompt();
+          }
+        }
+        
+        // Cmd/Ctrl + S - Download as text
+        if (modifier && e.key === 's') {
+          e.preventDefault();
+          if (window.promptData) {
+            downloadPrompt('txt');
+          }
+        }
+        
+        // Cmd/Ctrl + / - Reserved for future use
+        if (modifier && e.key === '/') {
+          e.preventDefault();
+        }
+        
+        // Escape - Reserved for future use
+        if (e.key === 'Escape') {
+          // Future: close modals, etc.
+        }
+      });
+      
+      // Close export menu when clicking outside
+      document.addEventListener('click', (e) => {
+        // Placeholder for future dropdown menus
+      });
+      
       // Use event delegation for dynamically added buttons
       document.querySelector('.action-bar').addEventListener('click', (e) => {
         const target = e.target.closest('button');
@@ -452,24 +856,35 @@
           console.log('Generating prompt with edits');
           generatePromptWithEdits();
         }
-        if (target.id === 'copyPrompt' || target.id === 'copyIcon') {
-          copyPrompt();
-        }
         if (target.id === 'sendToV0') {
           sendToV0();
         }
         if (target.id === 'reset') {
           reset();
         }
+        if (target.id === 'selectAllSections') {
+          toggleAllSections(true);
+        }
+        if (target.id === 'deselectAllSections') {
+          toggleAllSections(false);
+        }
+        if (target.classList.contains('preset-btn')) {
+          const preset = target.getAttribute('data-preset');
+          if (preset) {
+            applySectionPreset(preset);
+          }
+        }
       });
     });
     
     function generatePromptWithEdits() {
-      // Collect edited values
+      // Collect edited design system values from form inputs
+      // Parse comma/newline-separated strings back into arrays
       const fontFamilies = document.getElementById('fontFamilies').value.split(',').map(s => s.trim()).filter(s => s);
       const fontSizes = document.getElementById('fontSizes').value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
       const fontWeights = document.getElementById('fontWeights').value.split(',').map(s => s.trim()).filter(s => s);
-      const colors = document.getElementById('colors').value.split('\n').map(s => s.trim()).filter(s => s);
+      // Colors are read-only from design system, no manual editing
+      const colors = designSystemData.colors || [];
       const spacing = document.getElementById('spacing').value.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
       
       // Collect section settings
@@ -507,6 +922,37 @@
       }, '*');
     }
     
+    /**
+     * Render color list with visual swatches and semantic roles
+     * @param {Object} designSystem - The design system containing colors and colorRoles
+     * @returns {string} HTML string for color list
+     */
+    function renderColorList(designSystem) {
+      const colors = designSystem.colors || [];
+      const colorRoles = designSystem.colorRoles || {};
+      
+      // Create a map of color values to their roles
+      const roleMap = {};
+      Object.entries(colorRoles).forEach(([role, color]) => {
+        if (color) {
+          roleMap[color.toLowerCase()] = role;
+        }
+      });
+      
+      return colors.map(color => {
+        const role = roleMap[color.toLowerCase()];
+        const roleTag = role ? `<span class="color-role">${role}</span>` : '';
+        
+        return `
+          <div class="color-item">
+            <div class="color-swatch" style="background-color: ${color};"></div>
+            <span class="color-code">${color}</span>
+            ${roleTag}
+          </div>
+        `;
+      }).join('');
+    }
+    
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
       console.log('Received message:', msg.type);
@@ -516,6 +962,7 @@
       const actionBar = document.querySelector('.action-bar');
       
       // Step 1: Design system extracted, show editor
+      // User can review/edit design tokens before generating the prompt
       if (msg.type === 'design-system-extracted') {
         const { designSystem, count, frames, screenshots } = msg.data;
         
@@ -543,8 +990,11 @@
         if (screenshots && Object.keys(screenshots).length > 0) {
           html += `
             <div class="editor-section">
-              <div class="editor-section-header">📸 Screen Previews</div>
-              <div class="editor-section-content">
+              <div class="editor-section-header collapsible-header" onclick="toggleSection(this)">
+                <span>📸 Screen Previews (${Object.keys(screenshots).length})</span>
+                <span class="collapse-icon">▸</span>
+              </div>
+              <div class="editor-section-content collapsible-content" style="display: none;">
                 <div class="screenshots-grid">
           `;
           
@@ -592,9 +1042,11 @@
             <div class="editor-section-header">🎨 Colors</div>
             <div class="editor-section-content">
               <div class="form-group">
-                <label class="form-label">Color Palette</label>
-                <textarea class="form-textarea" id="colors">${designSystem.colors.join('\n')}</textarea>
-                <div class="form-hint">One color per line (hex format)</div>
+                <label class="form-label">Color Palette (${designSystem.colors.length} colors)</label>
+                <div class="color-list" id="colorList">
+                  ${renderColorList(designSystem)}
+                </div>
+                <div class="form-hint">Detected from your design</div>
               </div>
             </div>
           </div>
@@ -613,6 +1065,13 @@
           <div class="editor-section">
             <div class="editor-section-header">⚙️ Prompt Sections (optional)</div>
             <div class="editor-section-content">
+              <div class="section-controls">
+                <button class="btn-small" id="selectAllSections">✓ Select All</button>
+                <button class="btn-small" id="deselectAllSections">✗ Deselect All</button>
+                <button class="btn-small preset-btn" data-preset="minimal">Minimal</button>
+                <button class="btn-small preset-btn" data-preset="standard">Standard</button>
+                <button class="btn-small preset-btn" data-preset="comprehensive">Comprehensive</button>
+              </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
                 <label style="display: flex; align-items: center; gap: 6px;">
                   <input type="checkbox" id="includeLayout" checked>
@@ -663,8 +1122,14 @@
       }
       
       // Step 2: Prompt generated
+      // Step 2: Prompt generated, show final output
       if (msg.type === 'prompt-generated') {
-        const { prompt, designSystem, count, screenshots } = msg.data;
+        const { prompt, designSystem, count, screenshots, frames } = msg.data;
+        
+        // Store frames if not already stored (safety check)
+        if (!window.extractedFrames) {
+          window.extractedFrames = frames;
+        }
         
         // Hide editor
         const editorDiv = document.getElementById('designSystemEditor');
@@ -685,8 +1150,11 @@
         if (screenshots && Object.keys(screenshots).length > 0) {
           html += `
             <div class="prompt-container" style="margin-bottom: 16px;">
-              <div class="prompt-header">📸 SCREEN PREVIEWS</div>
-              <div class="editor-section-content">
+              <div class="prompt-header collapsible-header" onclick="toggleSection(this)">
+                <span>📸 SCREEN PREVIEWS (${Object.keys(screenshots).length})</span>
+                <span class="collapse-icon">▸</span>
+              </div>
+              <div class="editor-section-content collapsible-content" style="display: none;">
                 <div class="screenshots-grid">
           `;
           
@@ -710,11 +1178,69 @@
         
         html += `
           <div class="prompt-container">
-            <div class="prompt-header">📝 COMPLETE SPECIFICATION</div>
-            <div class="prompt-content">
-              <button id="copyIcon" class="copy-icon" title="Copy specification + screenshots">📋</button>
-              <pre>${prompt}</pre>
+            <div class="prompt-header">
+              <span>📝 COMPLETE SPECIFICATION</span>
+              <button class="header-copy-btn" id="headerCopyBtn" onclick="copyPrompt()">
+                <span>📋</span>
+                <span>Copy All</span>
+              </button>
             </div>
+            <div class="stats-panel" id="statsPanel">
+              <div class="stats-item">
+                <span>Characters:</span>
+                <span class="stats-value" id="charCount">0</span>
+              </div>
+              <div class="stats-item">
+                <span>Words:</span>
+                <span class="stats-value" id="wordCount">0</span>
+              </div>
+              <div class="stats-item">
+                <span>Est. Tokens:</span>
+                <span class="stats-value" id="tokenCount">0</span>
+              </div>
+              <div class="stats-item">
+                <span>Reading:</span>
+                <span class="stats-value" id="readingTime">~0 min</span>
+              </div>
+            </div>
+            <div class="stats-panel" style="border-top: 1px solid #e5e5e5;">
+              <label class="screenshot-toggle">
+                <input type="checkbox" id="includeScreenshots" checked>
+                <span>Include <span class="screenshot-badge" id="screenshotCount">${Object.keys(screenshots).length}</span> screenshots</span>
+              </label>
+              <button class="view-gallery-btn" id="toggleGallery">View ▾</button>
+            </div>
+            <div class="screenshot-gallery-compact" id="screenshotGallery">
+              <div class="screenshots-grid">
+        `;
+        
+        window.extractedFrames.forEach((frame) => {
+          if (screenshots[frame.id]) {
+            html += `
+                <div class="screenshot-item">
+                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
+                  <div class="screenshot-label">${frame.name}</div>
+                </div>
+            `;
+          }
+        });
+        
+        html += `
+              </div>
+            </div>
+            <div class="edit-hint" id="editHint">
+              <span>✏️</span>
+              <span>You can edit this prompt directly. Changes are saved automatically.</span>
+            </div>
+            <div class="prompt-content">
+              <textarea class="prompt-textarea" id="promptTextarea">${prompt}</textarea>
+            </div>
+          </div>
+          
+          <div class="copy-feedback" id="copyFeedback">
+            <div class="copy-feedback-title" id="feedbackTitle">✓ Copied!</div>
+            <div class="copy-feedback-details" id="feedbackDetails"></div>
+            <div class="copy-feedback-toggle" id="feedbackToggle"></div>
           </div>
         `;
         
@@ -724,15 +1250,21 @@
         // Update action bar buttons
         actionBar.innerHTML = `
           <button id="sendToV0" class="btn-dark">
-            🚀 Send to v0
+            🚀 v0
           </button>
           <button id="reset" class="btn-secondary">
-            ↺ Reset
+            ↺
           </button>
         `;
         
         // Store data for clipboard
         window.promptData = prompt;
+        
+        // Setup auto-save for prompt edits
+        setupPromptAutoSave();
+        
+        // Setup gallery toggle
+        setupGalleryToggle();
       }
       
       if (msg.type === 'error') {
@@ -743,6 +1275,12 @@
       }
     };
     
+    /**
+     * Combine prompt text with screenshot markdown images
+     * Creates a unified export with visual previews embedded as data URIs
+     * 
+     * @returns Combined string with markdown image tags + prompt text
+     */
     function getFullPromptWithScreenshots() {
       let fullPrompt = '';
       
@@ -758,12 +1296,315 @@
         fullPrompt += '---\n\n';
       }
       
-      // Add the main prompt
-      fullPrompt += window.promptData;
+      // Get edited prompt from textarea if it exists, otherwise use stored prompt
+      const textarea = document.getElementById('promptTextarea');
+      const promptText = textarea ? textarea.value : window.promptData;
+      fullPrompt += promptText;
       
       return fullPrompt;
     }
     
+    /**
+     * Enable auto-save for prompt textarea with debounced saving
+     * Updates stats in real-time and shows save confirmation
+     * Debounces save indicator by 800ms to avoid flickering
+     */
+    function setupPromptAutoSave() {
+      const textarea = document.getElementById('promptTextarea');
+      const editHint = document.getElementById('editHint');
+      
+      if (!textarea) return;
+      
+      // Initial stats calculation
+      updateStats(textarea.value);
+      
+      let saveTimeout;
+      textarea.addEventListener('input', () => {
+        // Update stored prompt data
+        window.promptData = textarea.value;
+        
+        // Update stats
+        updateStats(textarea.value);
+        
+        // Show saved indicator
+        clearTimeout(saveTimeout);
+        editHint.innerHTML = '<span>💾</span><span>Saving changes...</span>';
+        editHint.classList.remove('saved');
+        
+        saveTimeout = setTimeout(() => {
+          editHint.innerHTML = '<span>✓</span><span>Changes saved</span>';
+          editHint.classList.add('saved');
+          
+          // Reset to edit hint after 2 seconds
+          setTimeout(() => {
+            editHint.innerHTML = '<span>✏️</span><span>You can edit this prompt directly. Changes are saved automatically.</span>';
+            editHint.classList.remove('saved');
+          }, 2000);
+        }, 800);
+      });
+    }
+    
+    function toggleSection(header) {
+      const content = header.nextElementSibling;
+      const isExpanded = header.classList.contains('expanded');
+      
+      if (isExpanded) {
+        header.classList.remove('expanded');
+        content.style.display = 'none';
+      } else {
+        header.classList.add('expanded');
+        content.style.display = 'block';
+      }
+    }
+
+    function toggleSection(header) {
+      const content = header.nextElementSibling;
+      const isExpanded = header.classList.contains('expanded');
+      
+      if (isExpanded) {
+        header.classList.remove('expanded');
+        content.style.display = 'none';
+      } else {
+        header.classList.add('expanded');
+        content.style.display = 'block';
+      }
+    }
+
+    function setupGalleryToggle() {
+      const toggleBtn = document.getElementById('toggleGallery');
+      const gallery = document.getElementById('screenshotGallery');
+      
+      if (!toggleBtn || !gallery) return;
+      
+      toggleBtn.addEventListener('click', () => {
+        gallery.classList.toggle('visible');
+        toggleBtn.textContent = gallery.classList.contains('visible') ? 'Hide ▴' : 'View ▾';
+      });
+    }
+    
+    /**
+     * Show smart copy feedback modal with toggle option
+     * Displays what was copied and offers quick switch to alternate format
+     * Auto-dismisses after 3 seconds
+     * 
+     * @param includeScreenshots - Whether screenshots were included in copy
+     */
+    function showCopyFeedback(includeScreenshots) {
+      const feedback = document.getElementById('copyFeedback');
+      const title = document.getElementById('feedbackTitle');
+      const details = document.getElementById('feedbackDetails');
+      const toggle = document.getElementById('feedbackToggle');
+      
+      if (!feedback) return;
+      
+      const screenshotCount = window.screenshots ? Object.keys(window.screenshots).length : 0;
+      
+      if (includeScreenshots && screenshotCount > 0) {
+        title.textContent = '✓ Copied with screenshots!';
+        details.textContent = `${screenshotCount} screenshot${screenshotCount > 1 ? 's' : ''} included (ready for v0, Claude, etc.)`;
+        toggle.textContent = 'Click to copy text-only instead';
+        toggle.onclick = () => {
+          feedback.classList.remove('visible');
+          copyPromptOnly();
+        };
+      } else {
+        title.textContent = '✓ Copied text-only!';
+        details.textContent = 'Prompt copied to clipboard';
+        if (screenshotCount > 0) {
+          toggle.textContent = `Click to include ${screenshotCount} screenshot${screenshotCount > 1 ? 's' : ''}`;
+          toggle.onclick = () => {
+            feedback.classList.remove('visible');
+            document.getElementById('includeScreenshots').checked = true;
+            copyPrompt();
+          };
+        } else {
+          toggle.textContent = '';
+        }
+      }
+      
+      feedback.classList.add('visible');
+      setTimeout(() => {
+        feedback.classList.remove('visible');
+      }, 3000);
+    }
+    
+    /**
+     * Calculate and display prompt statistics
+     * Token estimation: ~4 characters per token (rough OpenAI GPT estimate)
+     * Reading time: ~200 words per minute
+     * 
+     * @param text - The prompt text to analyze
+     */
+    function updateStats(text) {
+      const charCount = text.length;
+      const wordCount = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+      // Rough token estimate: ~4 chars per token for English text
+      const tokenCount = Math.ceil(charCount / 4);
+      // Reading time: ~200 words per minute
+      const readingTime = Math.ceil(wordCount / 200);
+      
+      const charEl = document.getElementById('charCount');
+      const wordEl = document.getElementById('wordCount');
+      const tokenEl = document.getElementById('tokenCount');
+      const timeEl = document.getElementById('readingTime');
+      
+      if (charEl) charEl.textContent = charCount.toLocaleString();
+      if (wordEl) wordEl.textContent = wordCount.toLocaleString();
+      if (tokenEl) tokenEl.textContent = tokenCount.toLocaleString();
+      if (timeEl) timeEl.textContent = `~${readingTime} min`;
+    }
+    
+    /**
+     * Batch select/deselect all prompt section checkboxes
+     * Used by "Select All" and "Deselect All" buttons
+     * 
+     * @param checked - true to check all, false to uncheck all
+     */
+    function toggleAllSections(checked) {
+      const checkboxes = [
+        'includeLayout',
+        'includeComponents',
+        'includeVisualTheme',
+        'includeResponsive',
+        'includeAccessibility',
+        'includeContent',
+        'includeConsistency'
+      ];
+      
+      checkboxes.forEach(id => {
+        const checkbox = document.getElementById(id);
+        if (checkbox) checkbox.checked = checked;
+      });
+    }
+    
+    /**
+     * Apply predefined section configurations
+     * Presets:
+     * - minimal: Just layout & components (fastest generation, smallest output)
+     * - standard: Layout, components, visual theme, responsive (balanced)
+     * - comprehensive: All sections enabled (complete specification)
+     * 
+     * @param preset - Preset name: 'minimal', 'standard', or 'comprehensive'
+     */
+    function applySectionPreset(preset) {
+      const presets = {
+        minimal: {
+          includeLayout: true,
+          includeComponents: true,
+          includeVisualTheme: false,
+          includeResponsive: false,
+          includeAccessibility: false,
+          includeContent: false,
+          includeConsistency: false
+        },
+        standard: {
+          includeLayout: true,
+          includeComponents: true,
+          includeVisualTheme: true,
+          includeResponsive: true,
+          includeAccessibility: false,
+          includeContent: false,
+          includeConsistency: false
+        },
+        comprehensive: {
+          includeLayout: true,
+          includeComponents: true,
+          includeVisualTheme: true,
+          includeResponsive: true,
+          includeAccessibility: true,
+          includeContent: true,
+          includeConsistency: true
+        }
+      };
+      
+      const config = presets[preset];
+      if (!config) return;
+      
+      Object.keys(config).forEach(key => {
+        const checkbox = document.getElementById(key);
+        if (checkbox) checkbox.checked = config[key];
+      });
+    }
+    
+    /**
+     * Download prompt in various formats
+     * Respects screenshot toggle setting for all formats
+     * 
+     * @param format - Export format: 'txt' (plain text), 'md' (markdown with images), or 'json' (structured data)
+     */
+    function downloadPrompt(format) {
+      const textarea = document.getElementById('promptTextarea');
+      const promptText = textarea ? textarea.value : window.promptData;
+      
+      if (!promptText) {
+        alert('No prompt to download');
+        return;
+      }
+      
+      const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
+      const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
+      
+      let content, filename, mimeType;
+      
+      if (format === 'txt') {
+        content = promptText;
+        filename = 'atlas-prompt.txt';
+        mimeType = 'text/plain';
+      } else if (format === 'md') {
+        // Add screenshots as markdown images if toggle is on
+        let markdown = '';
+        if (includeScreenshots && window.screenshots && Object.keys(window.screenshots).length > 0) {
+          markdown += '# Screen Previews\n\n';
+          window.extractedFrames.forEach((frame) => {
+            if (window.screenshots[frame.id]) {
+              markdown += `## ${frame.name}\n`;
+              markdown += `![${frame.name}](${window.screenshots[frame.id]})\n\n`;
+            }
+          });
+          markdown += '---\n\n';
+        }
+        markdown += promptText;
+        content = markdown;
+        filename = 'atlas-prompt.md';
+        mimeType = 'text/markdown';
+      } else if (format === 'json') {
+        const jsonData = {
+          prompt: promptText,
+          designSystem: window.designSystemData,
+          frames: window.extractedFrames,
+          screenshots: includeScreenshots ? window.screenshots : {},
+          generatedAt: new Date().toISOString(),
+          version: '1.0.0'
+        };
+        content = JSON.stringify(jsonData, null, 2);
+        filename = 'atlas-prompt.json';
+        mimeType = 'application/json';
+      }
+      
+      // Create download
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Show feedback
+      const formatName = format.toUpperCase();
+      alert(`✓ Downloaded as ${formatName}\n\nFile: ${filename}`);
+    }
+    
+    /**
+     * Copy text to clipboard using fallback method
+     * Uses execCommand('copy') as navigator.clipboard may not work in Figma plugin context
+     * Creates temporary textarea to facilitate the copy operation
+     * 
+     * @param text - The text to copy
+     * @returns true if successful, false otherwise
+     */
     function copyToClipboard(text) {
       // Fallback for Figma plugin environment where navigator.clipboard may not work
       const textarea = document.createElement('textarea');
@@ -785,23 +1626,41 @@
     }
     
     function copyPrompt() {
-      const fullPrompt = getFullPromptWithScreenshots();
-      const success = copyToClipboard(fullPrompt);
+      const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
+      const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
+      
+      if (includeScreenshots) {
+        const fullPrompt = getFullPromptWithScreenshots();
+        const success = copyToClipboard(fullPrompt);
+        if (success) {
+          showCopyFeedback(true);
+        } else {
+          alert('Failed to copy to clipboard. Please try again.');
+        }
+      } else {
+        copyPromptOnly();
+      }
+    }
+    
+    function copyPromptOnly() {
+      const textarea = document.getElementById('promptTextarea');
+      const promptText = textarea ? textarea.value : window.promptData;
+      const success = copyToClipboard(promptText);
       
       if (success) {
-        const screenshotCount = window.screenshots ? Object.keys(window.screenshots).length : 0;
-        const message = screenshotCount > 0 
-          ? `✓ Specification + ${screenshotCount} screenshot${screenshotCount > 1 ? 's' : ''} copied!\n\nReady to paste into v0, Claude, or your favorite AI tool.`
-          : '✓ Specification copied to clipboard!\n\nReady to paste into v0, Claude, or your favorite AI tool.';
-        alert(message);
+        showCopyFeedback(false);
       } else {
         alert('Failed to copy to clipboard. Please try again.');
       }
     }
     
     function sendToV0() {
+      // Get edited prompt from textarea if it exists
+      const textarea = document.getElementById('promptTextarea');
+      const promptText = textarea ? textarea.value : window.promptData;
+      
       // Send just the text prompt via URL (no screenshots due to size limits)
-      const encodedPrompt = encodeURIComponent(window.promptData);
+      const encodedPrompt = encodeURIComponent(promptText);
       const v0Url = `https://v0.dev/chat?q=${encodedPrompt}`;
       
       const screenshotCount = window.screenshots ? Object.keys(window.screenshots).length : 0;

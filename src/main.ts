@@ -31,6 +31,17 @@ import { normalizeFrame, extractDesignSystem } from './normalizeNode';
 import { compileUnifiedPrompt } from './promptCompiler';
 import type { ProcessedFrame } from './types';
 
+/**
+ * Sanitize data for UI communication by handling symbols and circular references
+ * Converts symbols to 'MIXED' string and removes functions
+ */
+function sanitizeDataForUI(data: any): any {
+  return JSON.parse(JSON.stringify(data, (key, value) => {
+    if (typeof value === 'symbol') return 'MIXED';
+    return value;
+  }));
+}
+
 // Figma provides __html__ automatically when ui is specified in manifest
 // @ts-ignore - __html__ is injected by Figma
 figma.showUI(__html__, { width: 480, height: 720 });
@@ -86,15 +97,12 @@ figma.ui.onmessage = async (msg) => {
       }
 
       // Send design system for review/editing (Step 1)
-      const sanitizedData = JSON.parse(JSON.stringify({
+      const sanitizedData = sanitizeDataForUI({
         frames: processedFrames,
         designSystem: designSystem,
         screenshots: screenshots,
         count: frames.length
-      }, (key, value) => {
-        if (typeof value === 'symbol') return 'MIXED';
-        return value;
-      }));
+      });
 
       figma.ui.postMessage({ 
         type: 'design-system-extracted', 
@@ -116,16 +124,13 @@ figma.ui.onmessage = async (msg) => {
       // Compile into single unified prompt with optional sections
       const unifiedPrompt = compileUnifiedPrompt(frames, designSystem, sections || {});
 
-      const sanitizedData = JSON.parse(JSON.stringify({
+      const sanitizedData = sanitizeDataForUI({
         frames: frames,
         designSystem: designSystem,
         prompt: unifiedPrompt,
         screenshots: screenshots,
         count: frames.length
-      }, (key, value) => {
-        if (typeof value === 'symbol') return 'MIXED';
-        return value;
-      }));
+      });
 
       figma.ui.postMessage({ 
         type: 'prompt-generated', 

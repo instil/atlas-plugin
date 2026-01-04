@@ -13,8 +13,21 @@ interface PromptSections {
 }
 
 /**
- * Compile all frames with design system and flow into a single comprehensive prompt
+ * Compile all frames with design system into a flow-focused prompt
+ * 
+ * Strategy (Hybrid Approach):
+ * 1. User Flow & Journey Phases (Primary Focus) - ASCII diagram + transitions
+ * 2. Design Language (Condensed) - Core tokens applied across all screens
+ * 3. Screen Details (Contextual) - Role in flow, transitions, key elements
+ * 4. Implementation Notes - State management and navigation
+ * 
  * Optimized for v0.dev and other AI code generation tools
+ * Emphasizes relationships between screens and user journey over pixel-perfect details
+ * 
+ * @param frames - Processed frame data with layout, components, interactions
+ * @param designSystem - Extracted design tokens (colors, typography, spacing, etc.)
+ * @param promptSections - Optional sections to include/exclude for customization
+ * @returns Formatted prompt string ready for AI tools (~40% more concise)
  */
 export function compileUnifiedPrompt(
   frames: ProcessedFrame[], 
@@ -35,410 +48,398 @@ export function compileUnifiedPrompt(
   const output: string[] = [];
   
   // Critical Instructions for AI
-  output.push('IMPORTANT INSTRUCTIONS:');
-  output.push('- Only implement the elements explicitly described in this specification');
-  output.push('- Do NOT add features, components, or functionality not mentioned');
-  output.push('- Do NOT make assumptions about missing information');
-  output.push('- Use ONLY the design tokens (colors, fonts, spacing) provided below');
-  output.push('- Follow the exact user flow and screen sequence specified');
+  output.push('IMPORTANT: Implement ONLY what is specified. Maintain design consistency across all screens.');
+  output.push('Focus on the user flow and screen transitions as the primary implementation goal.');
   output.push('');
-  output.push('───────────────────────────────────────────────────────────────');
+  output.push('═══════════════════════════════════════════════════════════════');
+  output.push('USER FLOW & JOURNEY (Primary Focus)');
+  output.push('═══════════════════════════════════════════════════════════════');
   output.push('');
   
-  // Header
-  output.push('APPLICATION DESIGN SPECIFICATION');
+  // ASCII Flow Diagram
+  output.push('FLOW DIAGRAM:');
   output.push('');
-  output.push(`Total Screens: ${frames.length}`);
-  output.push('Source: Figma Design File');
-  output.push('');
-  output.push('───────────────────────────────────────────────────────────────');
+  const flowLine = frames.map((f, i) => `[${i + 1}] ${f.name}`).join(' → ');
+  output.push(flowLine);
   output.push('');
   
-  // Design System
-  output.push('DESIGN SYSTEM');
+  // Journey Phases with Transitions
+  output.push('JOURNEY PHASES:');
   output.push('');
   
-  output.push('Typography:');
-  if (designSystem.typography && designSystem.typography.fontFamilies && designSystem.typography.fontFamilies.length > 0) {
-    output.push(`  Font Families: ${designSystem.typography.fontFamilies.join(', ')}`);
-  }
-  if (designSystem.typography && designSystem.typography.fontSizes && designSystem.typography.fontSizes.length > 0) {
-    output.push(`  Font Sizes: ${designSystem.typography.fontSizes.join('px, ')}px`);
-  }
-  if (designSystem.typography && designSystem.typography.fontWeights && designSystem.typography.fontWeights.length > 0) {
-    output.push(`  Font Weights: ${designSystem.typography.fontWeights.join(', ')}`);
-  }
-  if (designSystem.typography && designSystem.typography.lineHeights && designSystem.typography.lineHeights.length > 0) {
-    output.push(`  Line Heights: ${designSystem.typography.lineHeights.slice(0, 8).join('px, ')}px`);
-  }
+  frames.forEach((frame, index) => {
+    const phaseNumber = index + 1;
+    const isFirst = index === 0;
+    const isLast = index === frames.length - 1;
+    const nextFrame = !isLast ? frames[index + 1] : null;
+    
+    output.push(`Phase ${phaseNumber}: ${frame.name}`);
+    output.push(`  Role: ${getPurposeDescription(frame.purpose)}`);
+    
+    // Entry point
+    if (isFirst) {
+      output.push(`  Entry: Application start / Direct link`);
+    } else {
+      const prevFrame = frames[index - 1];
+      output.push(`  Entry: From "${prevFrame.name}"`);
+    }
+    
+    // Analyze interactions to infer progression logic
+    const buttons = frame.interactions?.filter(i => 
+      (i.type === 'Button' || i.type === 'Icon Button') && 
+      i.label && !i.label.toLowerCase().includes('back')
+    ) || [];
+    
+    const inputs = frame.interactions?.filter(i => i.type === 'Input Field') || [];
+    const links = frame.interactions?.filter(i => i.type === 'Link') || [];
+    
+    // Determine primary progression action
+    let progressionAction = null;
+    let progressionType = 'unknown';
+    
+    // Priority 1: Look for form submission patterns
+    if (inputs.length > 0) {
+      const submitButton = buttons.find(b => 
+        b.label && (
+          b.label.toLowerCase().includes('submit') ||
+          b.label.toLowerCase().includes('send') ||
+          b.label.toLowerCase().includes('sign') ||
+          b.label.toLowerCase().includes('login') ||
+          b.label.toLowerCase().includes('register') ||
+          b.label.toLowerCase().includes('continue') ||
+          b.label.toLowerCase().includes('next') ||
+          b.label.toLowerCase().includes('create') ||
+          b.label.toLowerCase().includes('save')
+        )
+      );
+      if (submitButton) {
+        progressionAction = submitButton;
+        progressionType = 'form-submit';
+      }
+    }
+    
+    // Priority 2: Look for explicit next/continue buttons
+    if (!progressionAction) {
+      const nextButton = buttons.find(b => 
+        b.label && (
+          b.label.toLowerCase().includes('next') ||
+          b.label.toLowerCase().includes('continue') ||
+          b.label.toLowerCase().includes('proceed') ||
+          b.label.toLowerCase().includes('get started') ||
+          b.label.toLowerCase().includes('begin')
+        )
+      );
+      if (nextButton) {
+        progressionAction = nextButton;
+        progressionType = 'explicit-next';
+      }
+    }
+    
+    // Priority 3: Look for action buttons (first prominent button)
+    if (!progressionAction && buttons.length > 0) {
+      progressionAction = buttons[0];
+      progressionType = 'primary-action';
+    }
+    
+    // Priority 4: Look for links
+    if (!progressionAction && links.length > 0) {
+      progressionAction = links[0];
+      progressionType = 'link';
+    }
+    
+    // Display user actions based on screen type
+    if (inputs.length > 0) {
+      output.push(`  User Actions:`);
+      
+      // Describe input collection
+      const inputDescriptions = inputs.slice(0, 3).map(inp => {
+        const label = inp.label || inp.placeholder || inp.description || 'input';
+        return label;
+      });
+      
+      if (inputs.length <= 3) {
+        output.push(`    1. Fill in: ${inputDescriptions.join(', ')}`);
+      } else {
+        output.push(`    1. Complete ${inputs.length}-field form (${inputDescriptions.slice(0, 2).join(', ')}, ...)`);
+      }
+      
+      // Describe validation/submission
+      if (progressionAction) {
+        output.push(`    2. Click "${progressionAction.label}" to submit`);
+      } else {
+        output.push(`    2. Submit form to continue`);
+      }
+    } else if (buttons.length > 0) {
+      output.push(`  User Actions:`);
+      buttons.slice(0, 3).forEach((btn, idx) => {
+        const actionDesc = btn.description || `Click "${btn.label}"`;
+        output.push(`    ${idx + 1}. ${actionDesc}`);
+      });
+    } else if (links.length > 0) {
+      output.push(`  User Actions:`);
+      output.push(`    1. Select from ${links.length} available option${links.length > 1 ? 's' : ''}`);
+    }
+    
+    // Specific transition description
+    if (nextFrame) {
+      output.push(`  Progression:`);
+      
+      if (progressionType === 'form-submit') {
+        output.push(`    → When user completes form and clicks "${progressionAction.label}"`);
+        if (inputs.length > 0) {
+          const inputFields = inputs.slice(0, 3).map(i => i.label || i.placeholder || 'field').join(', ');
+          output.push(`    → Validate: ${inputFields}`);
+        }
+        output.push(`    → Navigate to: ${nextFrame.name}`);
+      } else if (progressionType === 'explicit-next') {
+        output.push(`    → User clicks "${progressionAction.label}" button`);
+        output.push(`    → Navigate to: ${nextFrame.name}`);
+      } else if (progressionType === 'primary-action') {
+        output.push(`    → User clicks "${progressionAction.label}" button`);
+        output.push(`    → Navigate to: ${nextFrame.name}`);
+      } else if (progressionType === 'link') {
+        output.push(`    → User selects an option from the list`);
+        output.push(`    → Navigate to: ${nextFrame.name}`);
+      } else {
+        output.push(`    → User completes primary action`);
+        output.push(`    → Navigate to: ${nextFrame.name}`);
+      }
+      
+      // Data persistence
+      if (inputs.length > 0) {
+        output.push(`    → Persist form data for use in subsequent screens`);
+      }
+    } else {
+      output.push(`  Progression:`);
+      output.push(`    → Final screen: User has completed the flow`);
+      if (buttons.some(b => b.label && (b.label.toLowerCase().includes('done') || b.label.toLowerCase().includes('finish')))) {
+        output.push(`    → "Done" action closes flow or returns to home`);
+      }
+    }
+    
+    output.push('');
+  });
+  
+  output.push('═══════════════════════════════════════════════════════════════');
+  output.push('DESIGN LANGUAGE (Consistent Across Flow)');
+  output.push('═══════════════════════════════════════════════════════════════');
   output.push('');
   
-  output.push('Color Palette:');
+  // Condensed Design System
+  output.push('Core Tokens:');
+  
+  // Colors - semantic only
   if (designSystem.colorRoles && Object.keys(designSystem.colorRoles).length > 0) {
-    output.push('  Semantic Colors:');
+    output.push('  Colors:');
     if (designSystem.colorRoles.primary) output.push(`    Primary: ${designSystem.colorRoles.primary}`);
     if (designSystem.colorRoles.secondary) output.push(`    Secondary: ${designSystem.colorRoles.secondary}`);
     if (designSystem.colorRoles.background) output.push(`    Background: ${designSystem.colorRoles.background}`);
     if (designSystem.colorRoles.text) output.push(`    Text: ${designSystem.colorRoles.text}`);
-    if (designSystem.colorRoles.border) output.push(`    Border: ${designSystem.colorRoles.border}`);
-    output.push('');
+  } else if (designSystem.colors && designSystem.colors.length > 0) {
+    // Fallback if no semantic colors
+    output.push(`  Colors: ${designSystem.colors.slice(0, 5).join(', ')}`);
   }
-  if (designSystem.colors && designSystem.colors.length > 0) {
-    output.push('  All Colors:');
-    designSystem.colors.slice(0, 8).forEach(color => {
-      output.push(`    ${color}`);
-    });
-    if (designSystem.colors.length > 8) {
-      output.push('  Additional Colors:');
-      designSystem.colors.slice(8, 15).forEach(color => {
-        output.push(`    ${color}`);
-      });
+  
+  // Typography - condensed
+  if (designSystem.typography) {
+    output.push('  Typography:');
+    if (designSystem.typography.fontFamilies && designSystem.typography.fontFamilies.length > 0) {
+      output.push(`    Font: ${designSystem.typography.fontFamilies[0]}`);
     }
-    if (designSystem.colors.length > 15) {
-      output.push(`  ... and ${designSystem.colors.length - 15} more colors`);
+    if (designSystem.typography.fontSizes && designSystem.typography.fontSizes.length > 0) {
+      const sizes = designSystem.typography.fontSizes;
+      output.push(`    Sizes: ${sizes[0]}px (small), ${sizes[Math.floor(sizes.length / 2)]}px (medium), ${sizes[sizes.length - 1]}px (large)`);
     }
   }
-  output.push('');
   
-  output.push('Border Radius:');
-  if (designSystem.borderRadius && designSystem.borderRadius.length > 0) {
-    output.push(`  Values: ${designSystem.borderRadius.join('px, ')}px`);
-    output.push(`  Suggestion: Use ${designSystem.borderRadius[0]}px for subtle rounding, ${designSystem.borderRadius[Math.floor(designSystem.borderRadius.length / 2)] || designSystem.borderRadius[0]}px for prominent elements`);
-  } else {
-    output.push('  No rounded corners detected (use square corners)');
-  }
-  output.push('');
-  
-  output.push('Elevation/Shadows:');
-  if (designSystem.shadows && designSystem.shadows.length > 0) {
-    designSystem.shadows.slice(0, 3).forEach((shadow, idx) => {
-      output.push(`  Level ${idx + 1}: box-shadow: ${shadow}`);
-    });
-  } else {
-    output.push('  No shadows detected (flat design)');
-  }
-  output.push('');
-  output.push('');
-  
-  output.push('Spacing Scale:');
+  // Spacing - grid system
   if (designSystem.spacing && designSystem.spacing.length > 0) {
-    const uniqueSpacing = designSystem.spacing.filter(s => s > 0).sort((a, b) => a - b);
-    output.push(`  Values: ${uniqueSpacing.slice(0, 20).join('px, ')}px`);
-    if (uniqueSpacing.length > 20) {
-      output.push(`  ... and ${uniqueSpacing.length - 20} more values`);
-    }
+    const spacing = designSystem.spacing.filter(s => s > 0).sort((a, b) => a - b);
+    const base = spacing[0] || 8;
+    output.push(`  Spacing: Use ${base}px grid system (${base}, ${base * 2}, ${base * 3}, ${base * 4}, etc.)`);
   }
-  output.push('');  
-  // Design consistency warnings
-  if (sections.includeConsistency && designSystem.consistencyWarnings && designSystem.consistencyWarnings.length > 0) {
-    output.push('DESIGN CONSISTENCY NOTES:');
-    designSystem.consistencyWarnings.forEach(warning => {
-      output.push(`  ${warning.type}: ${warning.message}`);
-      if (warning.examples) {
-        warning.examples.forEach((ex: any) => {
-          output.push(`    - ${ex.color1} and ${ex.color2} are ${ex.similarity} similar`);
-        });
-      }
+  
+  // Border radius
+  if (designSystem.borderRadius && designSystem.borderRadius.length > 0) {
+    output.push(`  Border Radius: ${designSystem.borderRadius.slice(0, 3).join('px, ')}px`);
+  }
+  
+  // Shadows
+  if (designSystem.shadows && designSystem.shadows.length > 0) {
+    output.push(`  Elevation: ${designSystem.shadows.length} level${designSystem.shadows.length > 1 ? 's' : ''} (subtle to prominent)`);
+  }
+  
+  output.push('');
+  
+  // Component Library (if patterns detected)
+  const allComponents = frames.reduce((acc: any[], f: ProcessedFrame) => {
+    return acc.concat(f.componentPatterns || []);
+  }, []);
+  if (sections.includeComponents && allComponents.length > 0) {
+    output.push('Component Patterns:');
+    const uniqueTypes = [...new Set(allComponents.map((c: any) => c.type))];
+    uniqueTypes.slice(0, 5).forEach(type => {
+      const examples = allComponents.filter((c: any) => c.type === type);
+      output.push(`  - ${type}: Used ${examples.length}× (create reusable component)`);
     });
     output.push('');
   }
-    output.push('───────────────────────────────────────────────────────────────');
+  
+  output.push('═══════════════════════════════════════════════════════════════');
+  output.push('SCREEN DETAILS (Contextual)');
+  output.push('═══════════════════════════════════════════════════════════════');
   output.push('');
   
-  // User Flow
-  output.push('USER FLOW');
-  output.push('');
-  
+  // Detailed Screen Descriptions - Flow-focused
   frames.forEach((frame, index) => {
-    const arrow = index < frames.length - 1 ? ' → ' : '';
-    output.push(`${index + 1}. ${frame.name} (${getPurposeDescription(frame.purpose)})${arrow}`);
-  });
-  output.push('');
-  output.push('───────────────────────────────────────────────────────────────');
-  output.push('');
-  
-  // Detailed Screen Descriptions
-  output.push('SCREEN SPECIFICATIONS');
-  output.push('');
-  
-  frames.forEach((frame, index) => {
-    output.push(`Screen ${index + 1}: ${frame.name}`);
+    output.push(`[${index + 1}] ${frame.name}`);
     output.push('');
     
-    // Purpose
-    const purposeDescription = getPurposeDescription(frame.purpose);
-    output.push(`Purpose: ${purposeDescription}`);
-    output.push('');
+    // Role in flow (most important)
+    output.push(`Role in Flow: ${getPurposeDescription(frame.purpose)}`);
     
-    // Layout
-    const layoutType = frame.layoutMode === 'HORIZONTAL' ? 'Horizontal (Row)' : 
-                       frame.layoutMode === 'VERTICAL' ? 'Vertical (Column)' : 
-                       'Custom/Absolute';
-    output.push(`Layout: ${layoutType}`);
-    output.push(`Dimensions: ${Math.round(frame.width)}×${Math.round(frame.height)}px`);
-    output.push('');
+    // Analyze progression context for this screen
+    const buttons = frame.interactions?.filter(i => 
+      (i.type === 'Button' || i.type === 'Icon Button')
+    ) || [];
     
-    // Layout Structure
-    if (sections.includeLayout && frame.layoutStructure) {
-      output.push('Structure & Layout:');
-      
-      // Get common spacing
-      const commonSpacing = (designSystem.spacing && designSystem.spacing.length > 0) 
-        ? designSystem.spacing.filter(s => s >= 8 && s <= 48).sort((a, b) => a - b)
-        : [];
-      const suggestedPadding = commonSpacing[Math.floor(commonSpacing.length * 0.3)] || 16;
-      const suggestedGap = commonSpacing[Math.floor(commonSpacing.length * 0.2)] || 12;
-      
-      output.push(`  Recommended spacing: ${suggestedPadding}px padding, ${suggestedGap}px gap between elements`);
-      output.push('');
-      
-      // Top region
-      if (frame.layoutStructure.regions && frame.layoutStructure.regions.top && frame.layoutStructure.regions.top.length > 0) {
-        output.push('  TOP AREA (header/navigation):');
-        frame.layoutStructure.regions.top.forEach((item: any) => {
-          const details = [
-            item.fullWidth ? 'full-width' : `${item.width}px wide`,
-            item.centered ? 'horizontally centered' : 'left-aligned',
-            item.layout ? item.layout.toLowerCase() + ' layout' : null,
-            item.positioning === 'absolute' ? 'fixed positioning' : null,
-          ].filter(Boolean).join(', ');
-          output.push(`    - ${item.name} (${details})`);
-        });
-      }
-      
-      // Middle region
-      if (frame.layoutStructure.regions && frame.layoutStructure.regions.middle && frame.layoutStructure.regions.middle.length > 0) {
-        output.push('  MAIN CONTENT (body):');
-        frame.layoutStructure.regions.middle.forEach((item: any) => {
-          const details = [
-            item.fullWidth ? 'full-width' : `${item.width}px wide`,
-            item.centered ? 'horizontally centered' : 'left-aligned',
-            item.layout ? item.layout.toLowerCase() + ' layout' : null,
-          ].filter(Boolean).join(', ');
-          output.push(`    - ${item.name} (${details})`);
-        });
-      }
-      
-      // Bottom region
-      if (frame.layoutStructure.regions && frame.layoutStructure.regions.bottom && frame.layoutStructure.regions.bottom.length > 0) {
-        output.push('  BOTTOM AREA (footer/actions):');
-        frame.layoutStructure.regions.bottom.forEach((item: any) => {
-          const details = [
-            item.fullWidth ? 'full-width' : `${item.width}px wide`,
-            item.centered ? 'horizontally centered' : 'left-aligned',
-            item.layout ? item.layout.toLowerCase() + ' layout' : null,
-            item.positioning === 'absolute' ? 'fixed positioning' : null,
-          ].filter(Boolean).join(', ');
-          output.push(`    - ${item.name} (${details})`);
-        });
-      }
-      
-      output.push('');
-    }
+    const inputs = frame.interactions?.filter(i => i.type === 'Input Field') || [];
     
-    // Visual theme
-    if (sections.includeVisualTheme && frame.visualTheme && frame.visualTheme.maxContentWidth) {
-      output.push(`Content Container:`);
-      output.push(`  Max width: ${frame.visualTheme.maxContentWidth}px (content should be centered within this width)`);
-      output.push('');
-    }
-    
-    output.push(`Reference Dimensions: ${Math.round(frame.width)}×${Math.round(frame.height)}px`);
-    output.push('');
-    
-    // Component patterns
-    if (sections.includeComponents && frame.componentPatterns && Array.isArray(frame.componentPatterns) && frame.componentPatterns.length > 0) {
-      const repeatableComponents = frame.componentPatterns.filter((p: any) => p.count && p.count > 1);
-      const structuralComponents = frame.componentPatterns.filter((p: any) => !p.count || p.count === 1);
+    // Transitions (critical for flow)
+    if (index < frames.length - 1) {
+      const nextFrame = frames[index + 1];
       
-      if (structuralComponents.length > 0) {
-        output.push(`Structural Components:`);
-        structuralComponents.forEach((pattern: any) => {
-          output.push(`  - ${pattern.type}: "${pattern.name}"`);
-        });
-        output.push('');
-      }
+      // Find primary progression button
+      const primaryAction = buttons.find(btn => 
+        btn.label && !btn.label.toLowerCase().includes('back') && !btn.label.toLowerCase().includes('cancel') &&
+        (btn.label.toLowerCase().includes('next') || 
+         btn.label.toLowerCase().includes('continue') ||
+         btn.label.toLowerCase().includes('submit') ||
+         btn.label.toLowerCase().includes('send') ||
+         btn.label.toLowerCase().includes('sign') ||
+         btn.label.toLowerCase().includes('login') ||
+         btn.label.toLowerCase().includes('register') ||
+         btn.label.toLowerCase().includes('get started') ||
+         btn.label.toLowerCase().includes('proceed'))
+      );
       
-      if (repeatableComponents.length > 0) {
-        output.push(`Repeatable Components (create as reusable components):`);
-        repeatableComponents.forEach((pattern: any) => {
-          output.push(`  - "${pattern.name}" appears ${pattern.count}× - ${pattern.suggestion}`);
-        });
-        output.push('');
-      }
-    }
-    
-    // Content organization
-    const summary = frame.contentSummary;
-    if (summary && (summary.sections?.length > 0 || summary.headings?.length > 0 || summary.keyText?.length > 0)) {
-      output.push(`Content Structure:`);
+      // Build detailed transition instructions
+      output.push(`Navigation Flow:`);
       
-      if (summary.sections && summary.sections.length > 0) {
-        output.push(`  Major Sections:`);
-        summary.sections.forEach((section: string) => {
-          output.push(`    - ${section}`);
-        });
-      }
-      
-      if (summary.headings && summary.headings.length > 0) {
-        output.push(`  Headings:`);
-        const sortedSizes = (designSystem.typography && designSystem.typography.fontSizes && designSystem.typography.fontSizes.length > 0)
-          ? designSystem.typography.fontSizes.slice().sort((a, b) => b - a)
-          : [24, 20, 16];
-        summary.headings.forEach((heading: string, idx: number) => {
-          const suggestedSize = sortedSizes[Math.min(idx, sortedSizes.length - 1)];
-          output.push(`    - "${heading}" (use ${suggestedSize}px)`);
-        });
-      }
-      
-      if (summary.keyText && summary.keyText.length > 0) {
-        const relevantText = summary.keyText.filter((t: string) => t.length > 10 && !t.includes('⌘'));
-        if (relevantText.length > 0) {
-          output.push(`  Text Content:`);
-          relevantText.slice(0, 4).forEach((text: string) => {
-            output.push(`    - "${text}"`);
-          });
+      if (primaryAction) {
+        if (inputs.length > 0) {
+          // Form submission flow
+          output.push(`  1. User fills ${inputs.length} input field${inputs.length > 1 ? 's' : ''}`);
+          const requiredInputs = inputs.slice(0, 2).map(i => i.label || i.placeholder || 'field').join(', ');
+          output.push(`     (${requiredInputs}${inputs.length > 2 ? ', ...' : ''})`);
+          output.push(`  2. User clicks "${primaryAction.label}" button`);
+          output.push(`  3. System validates input`);
+          output.push(`  4. On success → Navigate to "${nextFrame.name}"`);
+          output.push(`  5. On error → Display validation messages inline`);
+        } else {
+          // Simple button click flow
+          output.push(`  1. User clicks "${primaryAction.label}" button`);
+          output.push(`  2. Navigate to "${nextFrame.name}"`);
+        }
+      } else {
+        // Fallback if no clear primary action found
+        const anyActionButton = buttons.find(b => b.label && !b.label.toLowerCase().includes('back'));
+        if (anyActionButton) {
+          output.push(`  1. User interacts with content`);
+          output.push(`  2. User clicks "${anyActionButton.label}"`);
+          output.push(`  3. Navigate to "${nextFrame.name}"`);
+        } else {
+          output.push(`  1. User completes interaction on this screen`);
+          output.push(`  2. System automatically navigates to "${nextFrame.name}"`);
         }
       }
-      output.push('');
+      
+      // Alternative actions (back button, cancel)
+      const backButton = buttons.find(b => b.label && 
+        (b.label.toLowerCase().includes('back') || b.label.toLowerCase().includes('cancel'))
+      );
+      if (backButton) {
+        output.push(`  Alternative: "${backButton.label}" → Return to previous screen`);
+      }
+    } else {
+      output.push(`Navigation Flow:`);
+      output.push(`  1. This is the final screen in the flow`);
+      const doneButton = buttons.find(b => b.label && 
+        (b.label.toLowerCase().includes('done') || 
+         b.label.toLowerCase().includes('finish') ||
+         b.label.toLowerCase().includes('close') ||
+         b.label.toLowerCase().includes('complete'))
+      );
+      if (doneButton) {
+        output.push(`  2. User clicks "${doneButton.label}" to exit flow`);
+        output.push(`  3. Return to application home or close modal`);
+      } else {
+        output.push(`  2. User may close flow or return to start`);
+      }
     }
     
-    // Interactive Elements
-    if (frame.interactions && Array.isArray(frame.interactions) && frame.interactions.length > 0) {
-      output.push(`Interactive Elements:`);
-      
-      // Group by type for better organization
+    // Layout type (simplified)
+    const layoutType = frame.layoutMode === 'HORIZONTAL' ? 'Row' : 
+                       frame.layoutMode === 'VERTICAL' ? 'Column' : 
+                       'Custom';
+    output.push(`Layout: ${layoutType} (${Math.round(frame.width)}×${Math.round(frame.height)}px)`);
+    
+    output.push('');
+    
+    // Key Elements (top 5-7 most important)
+    const keyElements: string[] = [];
+    
+    // Content sections
+    if (frame.contentSummary?.sections && frame.contentSummary.sections.length > 0) {
+      keyElements.push(`Sections: ${frame.contentSummary.sections.slice(0, 3).join(', ')}`);
+    }
+    
+    // Headings
+    if (frame.contentSummary?.headings && frame.contentSummary.headings.length > 0) {
+      keyElements.push(`Heading: "${frame.contentSummary.headings[0]}"`);
+    }
+    
+    // Interactive elements (grouped by type)
+    if (frame.interactions && frame.interactions.length > 0) {
       const buttons = frame.interactions.filter(i => i.type === 'Button' || i.type === 'Icon Button');
       const inputs = frame.interactions.filter(i => i.type === 'Input Field');
       const links = frame.interactions.filter(i => i.type === 'Link');
-      const toggles = frame.interactions.filter(i => i.type === 'Toggle');
-      const others = frame.interactions.filter(i => 
-        !['Button', 'Icon Button', 'Input Field', 'Link', 'Toggle'].includes(i.type)
-      );
       
       if (buttons.length > 0) {
-        output.push('  Buttons:');
-        buttons.forEach((btn) => {
-          output.push(`    - ${btn.description}`);
-        });
+        keyElements.push(`Buttons: ${buttons.length}× (${buttons.slice(0, 2).map(b => `"${b.label || b.description}"`).join(', ')})`);
       }
-      
       if (inputs.length > 0) {
-        output.push('  Input Fields:');
-        inputs.forEach((inp) => {
-          output.push(`    - ${inp.description}`);
-        });
+        keyElements.push(`Inputs: ${inputs.length} field${inputs.length > 1 ? 's' : ''}`);
       }
-      
       if (links.length > 0) {
-        output.push('  Links:');
-        links.forEach((link) => {
-          output.push(`    - ${link.description}`);
-        });
+        keyElements.push(`Links: ${links.length}×`);
       }
-      
-      if (toggles.length > 0) {
-        output.push('  Toggles/Controls:');
-        toggles.forEach((toggle) => {
-          output.push(`    - ${toggle.description}`);
-        });
-      }
-      
-      if (others.length > 0) {
-        output.push('  Other Interactive:');
-        others.forEach((other) => {
-          output.push(`    - ${other.description}`);
-        });
-      }
-      
+    }
+    
+    if (keyElements.length > 0) {
+      output.push('Key Elements:');
+      keyElements.forEach(el => output.push(`  - ${el}`));
       output.push('');
     }
     
-    // Navigation hints
-    if (index < frames.length - 1) {
-      const nextFrame = frames[index + 1];
-      const primaryAction = frame.interactions.find(int => 
-        int.type === 'button' && (int.label?.toLowerCase().includes('next') || 
-                                  int.label?.toLowerCase().includes('continue') ||
-                                  int.label?.toLowerCase().includes('submit') ||
-                                  int.label?.toLowerCase().includes('send') ||
-                                  int.label?.toLowerCase().includes('sign') ||
-                                  int.label?.toLowerCase().includes('login'))
-      );
+    // Layout structure (only if includeLayout is true and complex)
+    if (sections.includeLayout && frame.layoutStructure?.regions) {
+      const hasMultipleRegions = 
+        (frame.layoutStructure.regions.top?.length || 0) +
+        (frame.layoutStructure.regions.middle?.length || 0) +
+        (frame.layoutStructure.regions.bottom?.length || 0) > 2;
       
-      output.push(`Navigation:`);
-      if (primaryAction) {
-        output.push(`  "${primaryAction.label || primaryAction.nodeName}" navigates to "${nextFrame.name}"`);
-      } else {
-        output.push(`  This screen leads to "${nextFrame.name}"`);
-      }
-      output.push('');
-    }
-    
-    // Responsive hints
-    if (sections.includeResponsive && frame.responsiveHints) {
-      output.push('Responsive Behavior:');
-      output.push(`  Target: ${frame.responsiveHints.breakpointSuggestion}`);
-      
-      if (frame.responsiveHints.stackingRecommendations && frame.responsiveHints.stackingRecommendations.length > 0) {
-        output.push('  Layout Adjustments:');
-        frame.responsiveHints.stackingRecommendations.forEach((rec: any) => {
-          output.push(`    - ${rec.name}: ${rec.suggestion}`);
-        });
-      }
-      
-      if (frame.responsiveHints.fluidElements && frame.responsiveHints.fluidElements.length > 0) {
-        output.push('  Fluid Elements:');
-        frame.responsiveHints.fluidElements.forEach((el: any) => {
-          output.push(`    - ${el.name}: ${el.suggestion}`);
-        });
-      }
-      
-      output.push('');
-    }
-    
-    // Accessibility issues
-    if (sections.includeAccessibility && frame.accessibilityIssues && frame.accessibilityIssues.length > 0) {
-      output.push('Accessibility Guidelines:');
-      frame.accessibilityIssues.forEach((issue: any) => {
-        const prefix = issue.type === 'warning' ? '⚠️' : 'ℹ️';
-        output.push(`  ${prefix} ${issue.category}: ${issue.message}`);
-        if (issue.elements && issue.elements.length > 0) {
-          output.push(`     Affected: ${issue.elements.slice(0, 3).join(', ')}`);
+      if (hasMultipleRegions) {
+        output.push('Structure:');
+        if (frame.layoutStructure.regions.top && frame.layoutStructure.regions.top.length > 0) {
+          output.push(`  Header: ${frame.layoutStructure.regions.top.map((i: any) => i.name).join(', ')}`);
         }
-      });
-      output.push('');
-    }
-    
-    // Content guidelines
-    if (sections.includeContent && frame.contentGuidelines) {
-      const hasPlaceholder = frame.contentGuidelines.placeholderContent && frame.contentGuidelines.placeholderContent.length > 0;
-      const hasDynamic = frame.contentGuidelines.dynamicContent && frame.contentGuidelines.dynamicContent.length > 0;
-      const hasLimits = frame.contentGuidelines.characterLimits && frame.contentGuidelines.characterLimits.length > 0;
-      
-      if (hasPlaceholder) {
-        output.push('Content Notes:');
-        output.push(`  Placeholder content detected: ${frame.contentGuidelines.placeholderContent.length} items`);
-        output.push('  Replace with actual copy before production');
-      }
-      
-      if (hasDynamic) {
-        if (!hasPlaceholder) output.push('Content Notes:');
-        output.push('  Dynamic Content:');
-        frame.contentGuidelines.dynamicContent.forEach((item: any) => {
-          output.push(`    - ${item.section}: ${item.suggestion}`);
-        });
-      }
-      
-      if (hasLimits) {
-        if (!hasPlaceholder && !hasDynamic) output.push('Content Notes:');
-        output.push('  Text Truncation:');
-        frame.contentGuidelines.characterLimits.slice(0, 2).forEach((item: any) => {
-          output.push(`    - "${item.text}" (${item.length} chars): ${item.suggestion}`);
-        });
-      }
-      
-      if (hasPlaceholder || hasDynamic || hasLimits) {
+        if (frame.layoutStructure.regions.middle && frame.layoutStructure.regions.middle.length > 0) {
+          output.push(`  Body: ${frame.layoutStructure.regions.middle.map((i: any) => i.name).join(', ')}`);
+        }
+        if (frame.layoutStructure.regions.bottom && frame.layoutStructure.regions.bottom.length > 0) {
+          output.push(`  Footer: ${frame.layoutStructure.regions.bottom.map((i: any) => i.name).join(', ')}`);
+        }
         output.push('');
       }
     }
@@ -447,58 +448,44 @@ export function compileUnifiedPrompt(
     output.push('');
   });
   
-  // Implementation Guidelines
-  output.push('IMPLEMENTATION REQUIREMENTS');
+  output.push('═══════════════════════════════════════════════════════════════');
+  output.push('IMPLEMENTATION NOTES');
+  output.push('═══════════════════════════════════════════════════════════════');
   output.push('');
   
-  output.push('Design System Constraints:');
-  output.push('  - Use ONLY the typography values specified above');
-  output.push('  - Use ONLY the colors listed in the palette');
-  output.push('  - Use ONLY the spacing values provided');
-  output.push('  - Do NOT introduce new fonts, colors, or spacing values');
-  output.push('  - Maintain consistent visual hierarchy across all screens');
+  output.push('Navigation & State:');
+  output.push('  - Implement smooth transitions between screens');
+  output.push('  - Persist relevant data across navigation');
+  output.push('  - Include back button functionality where appropriate');
+  output.push('  - Handle loading and error states for async operations');
   output.push('');
   
-  output.push('Visual States:');
-  output.push('  - Buttons should have hover states (slightly darker/lighter)');
-  output.push('  - Active/pressed states should be visually distinct');
-  output.push('  - Disabled states should use reduced opacity (40-50%)');
-  output.push('  - Focus states should have visible outline for accessibility');
+  output.push('Design Consistency:');
+  output.push('  - Apply design tokens uniformly across all screens');
+  output.push('  - Maintain consistent spacing using the grid system');
+  output.push('  - Use the same component patterns throughout');
+  output.push('  - Ensure visual hierarchy is clear and consistent');
   output.push('');
   
-  output.push('Spacing & Layout:');
-  output.push('  - Use the spacing values provided in the design system');
-  output.push('  - Maintain consistent padding within similar components');
-  output.push('  - Use smaller spacing (8-12px) for related elements');
-  output.push('  - Use larger spacing (24-48px) to separate sections');
-  output.push('  - Elements should align to a consistent grid');
-  output.push('');
+  if (sections.includeAccessibility) {
+    output.push('Accessibility:');
+    output.push('  - Use semantic HTML elements');
+    output.push('  - Ensure WCAG AA color contrast (4.5:1 minimum)');
+    output.push('  - Support keyboard navigation through the flow');
+    output.push('  - Include appropriate ARIA labels for interactive elements');
+    output.push('');
+  }
   
-  output.push('Responsive Behavior:');
-  output.push('  - Reference dimensions are guidelines, not absolute requirements');
-  output.push('  - Adapt layouts appropriately for different screen sizes');
-  output.push('  - Maintain relative spacing and proportions');
-  output.push('  - Ensure touch-friendly targets on mobile (min 44x44px)');
-  output.push('');
+  if (sections.includeResponsive) {
+    output.push('Responsive Behavior:');
+    output.push('  - Adapt layouts for mobile, tablet, and desktop');
+    output.push('  - Maintain flow logic across all breakpoints');
+    output.push('  - Ensure touch-friendly targets on mobile (min 44×44px)');
+    output.push('  - Stack elements vertically on smaller screens');
+    output.push('');
+  }
   
-  output.push('Functional Behavior:');
-  output.push('  - Implement ONLY the interactive elements explicitly listed for each screen');
-  output.push('  - Connect screens according to the navigation flow specified');
-  output.push('  - Do NOT add buttons, links, or interactions not mentioned');
-  output.push('  - Add appropriate loading and error states where needed');
-  output.push('  - Include form validation for any input fields');
-  output.push('');
-  
-  output.push('Accessibility:');
-  output.push('  - Use semantic HTML elements');
-  output.push('  - Ensure WCAG AA color contrast (4.5:1 minimum)');
-  output.push('  - Support keyboard navigation');
-  output.push('  - Include appropriate ARIA labels');
-  output.push('');
-  output.push('───────────────────────────────────────────────────────────────');
-  output.push('');
-  output.push('REMINDER: Implement ONLY what is explicitly specified above.');
-  output.push('Do not add features, content, or design elements not mentioned.');
+  output.push('═══════════════════════════════════════════════════════════════');
   
   return output.join('\n');
 }

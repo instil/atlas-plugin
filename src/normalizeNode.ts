@@ -2,6 +2,13 @@
 
 import type { ProcessedFrame, NormalizedNode, DesignSystem } from './types';
 
+/**
+ * Safely serialize Figma objects by converting symbols and functions to safe values
+ * This prevents serialization errors when passing data to the UI
+ * 
+ * @param value - Any value to serialize
+ * @returns Serialized version safe for JSON stringification
+ */
 function safeSerialize(value: any): any {
   if (value === null || value === undefined) return null;
   if (typeof value === 'symbol') return 'MIXED';
@@ -56,15 +63,18 @@ export function extractDesignSystem(frames: FrameNode[]): DesignSystem {
   });
   
   // Determine color roles based on frequency and context
+  // This helps identify primary, secondary, background, and text colors
   const colorEntries = Object.entries(colorUsage).sort((a, b) => b[1] - a[1]);
   const colorRoles: any = {};
   
   if (colorEntries.length > 0) {
     // Most used color is likely primary or background
     const topColor = colorEntries[0][0];
+    
+    // Light colors are typically backgrounds, dark colors are typically primary/accent
     if (isLightColor(topColor)) {
       colorRoles.background = topColor;
-      // Find a dark color for text
+      // Find a dark color for text (good contrast with light background)
       const darkColor = colorEntries.find(([c]) => !isLightColor(c));
       if (darkColor) colorRoles.text = darkColor[0];
     } else {
@@ -167,7 +177,13 @@ function checkDesignConsistency(tokens: any): any[] {
 }
 
 /**
- * Calculate color similarity (0-1)
+ * Calculate color similarity using RGB distance
+ * Returns a value between 0 (completely different) and 1 (identical)
+ * Used to detect near-duplicate colors that could be consolidated
+ * 
+ * @param hex1 - First color in hex format (#RRGGBB)
+ * @param hex2 - Second color in hex format (#RRGGBB)
+ * @returns Similarity score from 0-1
  */
 function colorSimilarity(hex1: string, hex2: string): number {
   const r1 = parseInt(hex1.slice(1, 3), 16);
@@ -185,6 +201,14 @@ function colorSimilarity(hex1: string, hex2: string): number {
   return 1 - (rDiff + gDiff + bDiff) / 3;
 }
 
+/**
+ * Determine if a color is light or dark using perceived luminance
+ * Uses the standard luminance formula: 0.299*R + 0.587*G + 0.114*B
+ * Threshold of 0.7 (70%) classifies as light
+ * 
+ * @param hex - Color in hex format (#RRGGBB)
+ * @returns true if color is light, false if dark
+ */
 function isLightColor(hex: string): boolean {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -193,6 +217,14 @@ function isLightColor(hex: string): boolean {
   return luminance > 0.7;
 }
 
+/**
+ * Recursively traverse node tree and collect all design tokens
+ * Extracts: typography, colors, spacing, borders, shadows, effects
+ * Also tracks color usage frequency for semantic role detection
+ * 
+ * @param node - The Figma node to traverse
+ * @param tokens - Object containing Sets to collect tokens into
+ */
 function collectDesignTokens(node: SceneNode, tokens: any) {
   // Extract text properties
   if (node.type === 'TEXT') {
@@ -257,6 +289,13 @@ function collectDesignTokens(node: SceneNode, tokens: any) {
   }
 }
 
+/**
+ * Convert Figma RGB color object (0-1 range) to hex string
+ * Figma uses 0-1 range, we convert to 0-255 and then to hex
+ * 
+ * @param color - Figma RGB color object with r, g, b properties (0-1 range)
+ * @returns Hex color string (#RRGGBB)
+ */
 function rgbToHex(color: RGB): string {
   const r = Math.round(color.r * 255);
   const g = Math.round(color.g * 255);
@@ -710,6 +749,19 @@ export function normalizeNode(node: SceneNode): NormalizedNode {
 
 /**
  * Detect interactive elements and potential navigation patterns
+ */
+/**
+ * Detect interactive elements within a frame using heuristics
+ * Identifies buttons, inputs, links, toggles, and icons based on:
+ * - Node naming patterns ("button", "input", "link", etc.)
+ * - Visual characteristics (fills, borders, sizing)
+ * - Component instances
+ * - Text content patterns
+ * 
+ * Limits recursion depth to avoid capturing nested UI noise
+ * 
+ * @param node - The Figma node to analyze
+ * @returns Array of detected interactive elements with type and description
  */
 function detectInteractions(node: SceneNode): any[] {
   const interactions: any[] = [];
