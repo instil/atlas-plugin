@@ -69,6 +69,42 @@
       opacity: 0.5;
     }
     
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      font-size: 11px;
+      color: #666;
+    }
+    
+    .breadcrumb-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .breadcrumb-link {
+      color: #0d99ff;
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s ease;
+    }
+    
+    .breadcrumb-link:hover {
+      color: #0c8ae6;
+      text-decoration: underline;
+    }
+    
+    .breadcrumb-separator {
+      color: #d9d9d9;
+    }
+    
+    .breadcrumb-current {
+      color: #333;
+      font-weight: 500;
+    }
+    
     #result {
       display: none;
     }
@@ -122,6 +158,10 @@
 
     .collapsible-header.expanded .collapse-icon {
       transform: rotate(90deg);
+    }
+    
+    .collapsible-header:not(.expanded) {
+      border-bottom: none !important;
     }
 
     .collapsible-content {
@@ -586,8 +626,8 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       min-width: 180px;
       z-index: 1000;
-      max-height: 300px;
-      overflow-y: auto;
+      max-height: none;
+      overflow-y: visible;
     }
     
     .export-menu.visible {
@@ -657,8 +697,13 @@
       z-index: 10;
     }
     
+    .action-bar button,
+    .action-bar .export-dropdown {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    
     .action-bar button {
-      flex: 1;
       padding: 10px 16px;
       border: none;
       border-radius: 6px;
@@ -666,6 +711,7 @@
       font-weight: 600;
       cursor: pointer;
       transition: all 0.15s ease;
+      width: 100%;
     }
     
     .action-bar button:active {
@@ -738,10 +784,14 @@
       text-align: center;
       padding: 48px 24px;
       color: #666;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
     }
     
     .loading-state.visible {
-      display: block;
+      display: flex;
+      flex-direction: column;
     }
     
     .loading-spinner {
@@ -773,20 +823,20 @@
 <body>
   <div class="header">
     <h2>🎨 Atlas Prompt Compiler</h2>
-    <p>Select one or more FRAME nodes to extract design intent and generate AI-ready specifications</p>
+    <p>Select one or more frames in your design to create a detailed specification for AI tools</p>
   </div>
   
   <div class="content">
     <div class="empty-state" id="emptyState">
       <div class="empty-state-icon">📐</div>
-      <p><strong>Ready to extract</strong></p>
-      <p style="font-size: 11px; margin-top: 8px;">Click "Extract" to process selected frames</p>
+      <p><strong>Ready to go</strong></p>
+      <p style="font-size: 11px; margin-top: 8px;">Select your frames and click "Get Started"</p>
     </div>
     
     <div class="loading-state" id="loadingState">
       <div class="loading-spinner"></div>
-      <div class="loading-text">Extracting design intent...</div>
-      <div class="loading-subtext">Analyzing frames, capturing screenshots, and extracting design system</div>
+      <div class="loading-text">Analyzing your designs...</div>
+      <div class="loading-subtext">Taking screenshots and identifying colors, fonts, and spacing</div>
     </div>
     
     <div id="designSystemEditor"></div>
@@ -794,87 +844,66 @@
   </div>
   
   <div class="action-bar">
-    <button id="process" class="btn-primary">Extract Design Intent</button>
+    <button id="process" class="btn-primary">Get Started</button>
   </div>
   
   <script>
     // Wait for DOM to be ready
     document.addEventListener('DOMContentLoaded', () => {
-      // Keyboard shortcuts
-      document.addEventListener('keydown', (e) => {
-        // Detect platform: Mac uses Cmd (metaKey), Windows/Linux use Ctrl
-        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-        const modifier = isMac ? e.metaKey : e.ctrlKey;
-        
-        // Cmd/Ctrl + K - Copy with screenshots
-        if (modifier && e.key === 'k') {
-          e.preventDefault();
-          if (window.promptData) {
-            copyPrompt();
-          }
-        }
-        
-        // Cmd/Ctrl + S - Download as text
-        if (modifier && e.key === 's') {
-          e.preventDefault();
-          if (window.promptData) {
-            downloadPrompt('txt');
-          }
-        }
-        
-        // Cmd/Ctrl + / - Reserved for future use
-        if (modifier && e.key === '/') {
-          e.preventDefault();
-        }
-        
-        // Escape - Reserved for future use
-        if (e.key === 'Escape') {
-          // Future: close modals, etc.
-        }
-      });
-      
       // Close export menu when clicking outside
       document.addEventListener('click', (e) => {
-        // Placeholder for future dropdown menus
+        const exportMenu = document.getElementById('exportMenu');
+        const exportBtn = document.getElementById('exportBtn');
+        
+        if (exportMenu && !exportMenu.contains(e.target) && e.target !== exportBtn) {
+          exportMenu.classList.remove('visible');
+        }
       });
       
       // Use event delegation for dynamically added buttons
-      document.querySelector('.action-bar').addEventListener('click', (e) => {
-        const target = e.target.closest('button');
-        if (!target) return;
-        
-        console.log('Button clicked:', target.id);
-        
-        if (target.id === 'process') {
-          console.log('Sending process-selection message');
-          // Show loading state
-          document.getElementById('emptyState').style.display = 'none';
-          document.getElementById('loadingState').classList.add('visible');
-          parent.postMessage({ pluginMessage: { type: 'process-selection' } }, '*');
-        }
-        if (target.id === 'generatePrompt') {
-          console.log('Generating prompt with edits');
-          generatePromptWithEdits();
-        }
-        if (target.id === 'sendToV0') {
-          sendToV0();
-        }
-        if (target.id === 'reset') {
-          reset();
-        }
-        if (target.id === 'selectAllSections') {
-          toggleAllSections(true);
-        }
-        if (target.id === 'deselectAllSections') {
-          toggleAllSections(false);
-        }
-        if (target.classList.contains('preset-btn')) {
-          const preset = target.getAttribute('data-preset');
-          if (preset) {
-            applySectionPreset(preset);
+      const actionBar = document.querySelector('.action-bar');
+      if (actionBar) {
+        actionBar.addEventListener('click', (e) => {
+          const target = e.target.closest('button');
+          if (!target) return;
+          
+          console.log('Button clicked:', target.id);
+          
+          if (target.id === 'process') {
+            console.log('Sending process-selection message');
+            // Disable button and show loading state
+            target.disabled = true;
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('loadingState').classList.add('visible');
+            parent.postMessage({ pluginMessage: { type: 'process-selection' } }, '*');
           }
-        }
-      });
+          if (target.id === 'generatePrompt') {
+            console.log('Creating specification with edits');
+            generatePromptWithEdits();
+          }
+          if (target.id === 'copyBtn') {
+            copyPrompt();
+          }
+          if (target.id === 'sendToV0') {
+            sendToV0();
+          }
+          if (target.id === 'reset') {
+            reset();
+          }
+          if (target.id === 'selectAllSections') {
+            toggleAllSections(true);
+          }
+          if (target.id === 'deselectAllSections') {
+            toggleAllSections(false);
+          }
+          if (target.classList.contains('preset-btn')) {
+            const preset = target.getAttribute('data-preset');
+            if (preset) {
+              applySectionPreset(preset);
+            }
+          }
+        });
+      }
     });
     
     function generatePromptWithEdits() {
@@ -966,9 +995,10 @@
       if (msg.type === 'design-system-extracted') {
         const { designSystem, count, frames, screenshots } = msg.data;
         
-        // Hide loading and empty states
+        // Hide loading and empty states, re-enable process button
         emptyState.style.display = 'none';
         document.getElementById('loadingState').classList.remove('visible');
+        document.getElementById('process').disabled = false;
         resultDiv.classList.remove('visible');
         
         // Store data for later
@@ -979,9 +1009,9 @@
         // Show editable design system
         let html = `
           <div class="summary-card">
-            <h4>✓ Extracted from ${count} screen${count > 1 ? 's' : ''}</h4>
+            <h4>✓ Analyzed ${count} screen${count > 1 ? 's' : ''}</h4>
             <div class="summary-card-content">
-              Review and edit the design system below before generating the prompt
+              Review the colors, fonts, and spacing below, then create your specification
             </div>
           </div>
         `;
@@ -1063,14 +1093,11 @@
           </div>
           
           <div class="editor-section">
-            <div class="editor-section-header">⚙️ Prompt Sections (optional)</div>
+            <div class="editor-section-header">⚙️ What to Include (optional)</div>
             <div class="editor-section-content">
               <div class="section-controls">
                 <button class="btn-small" id="selectAllSections">✓ Select All</button>
                 <button class="btn-small" id="deselectAllSections">✗ Deselect All</button>
-                <button class="btn-small preset-btn" data-preset="minimal">Minimal</button>
-                <button class="btn-small preset-btn" data-preset="standard">Standard</button>
-                <button class="btn-small preset-btn" data-preset="comprehensive">Comprehensive</button>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
                 <label style="display: flex; align-items: center; gap: 6px;">
@@ -1102,7 +1129,7 @@
                   <span>Consistency Warnings</span>
                 </label>
               </div>
-              <div class="form-hint" style="margin-top: 8px;">Uncheck sections to reduce prompt size</div>
+              <div class="form-hint" style="margin-top: 8px;">Uncheck items to create a shorter specification</div>
             </div>
           </div>
         `;
@@ -1110,10 +1137,21 @@
         editorDiv.innerHTML = html;
         editorDiv.classList.add('visible');
         
+        // Setup section control buttons
+        const selectAllBtn = document.getElementById('selectAllSections');
+        const deselectAllBtn = document.getElementById('deselectAllSections');
+        
+        if (selectAllBtn) {
+          selectAllBtn.addEventListener('click', () => toggleAllSections(true));
+        }
+        if (deselectAllBtn) {
+          deselectAllBtn.addEventListener('click', () => toggleAllSections(false));
+        }
+        
         // Update action bar
         actionBar.innerHTML = `
           <button id="generatePrompt" class="btn-primary">
-            ✨ Generate Prompt
+            ✨ Create Specification
           </button>
           <button id="reset" class="btn-secondary">
             ↺ Cancel
@@ -1136,13 +1174,12 @@
         editorDiv.classList.remove('visible');
         
         let html = `
-          <div class="summary-card">
-            <h4>✓ Generated for ${count} screen${count > 1 ? 's' : ''}</h4>
-            <div class="summary-card-content">
-              <strong>Fonts:</strong> ${designSystem.typography.fontFamilies.length} families, ${designSystem.typography.fontSizes.length} sizes<br>
-              <strong>Colors:</strong> ${designSystem.colors.length} unique colors<br>
-              <strong>Spacing:</strong> ${designSystem.spacing.filter((s) => s > 0).length} values
-            </div>
+          <div class="breadcrumb">
+            <span class="breadcrumb-item">
+              <span class="breadcrumb-link" onclick="reset()">← Start Over</span>
+              <span class="breadcrumb-separator">•</span>
+            </span>
+            <span class="breadcrumb-current">Generated for ${count} screen${count > 1 ? 's' : ''}</span>
           </div>
         `;
         
@@ -1179,10 +1216,10 @@
         html += `
           <div class="prompt-container">
             <div class="prompt-header">
-              <span>📝 COMPLETE SPECIFICATION</span>
-              <button class="header-copy-btn" id="headerCopyBtn" onclick="copyPrompt()">
-                <span>📋</span>
-                <span>Copy All</span>
+              <span>📝 YOUR SPECIFICATION</span>
+              <button class="header-copy-btn" id="headerV0Btn" onclick="sendToV0()" title="Open in v0.dev">
+                <span>🚀</span>
+                <span>v0</span>
               </button>
             </div>
             <div class="stats-panel" id="statsPanel">
@@ -1208,7 +1245,6 @@
                 <input type="checkbox" id="includeScreenshots" checked>
                 <span>Include <span class="screenshot-badge" id="screenshotCount">${Object.keys(screenshots).length}</span> screenshots</span>
               </label>
-              <button class="view-gallery-btn" id="toggleGallery">View ▾</button>
             </div>
             <div class="screenshot-gallery-compact" id="screenshotGallery">
               <div class="screenshots-grid">
@@ -1228,10 +1264,6 @@
         html += `
               </div>
             </div>
-            <div class="edit-hint" id="editHint">
-              <span>✏️</span>
-              <span>You can edit this prompt directly. Changes are saved automatically.</span>
-            </div>
             <div class="prompt-content">
               <textarea class="prompt-textarea" id="promptTextarea">${prompt}</textarea>
             </div>
@@ -1247,15 +1279,39 @@
         resultDiv.innerHTML = html;
         resultDiv.classList.add('visible');
         
-        // Update action bar buttons
+        // Update action bar buttons with export dropdown
         actionBar.innerHTML = `
-          <button id="sendToV0" class="btn-dark">
-            🚀 v0
+          <button id="copyBtn" class="btn-primary" onclick="copyPrompt()">
+            📋 Copy
           </button>
-          <button id="reset" class="btn-secondary">
-            ↺
-          </button>
+          <div class="export-dropdown">
+            <button id="exportBtn" class="btn-secondary">
+              💾 Export ▾
+            </button>
+            <div class="export-menu" id="exportMenu">
+              <div class="export-menu-item" data-action="download-txt">
+                <span class="export-menu-item-icon">📄</span>
+                <span>Download as TXT</span>
+                <span class="kbd">⌘S</span>
+              </div>
+              <div class="export-menu-item" data-action="download-md">
+                <span class="export-menu-item-icon">📝</span>
+                <span>Download as Markdown</span>
+              </div>
+              <div class="export-menu-item" data-action="download-json">
+                <span class="export-menu-item-icon">📦</span>
+                <span>Download as JSON</span>
+              </div>
+              <div class="export-menu-item" data-action="download-html">
+                <span class="export-menu-item-icon">🌐</span>
+                <span>Download as HTML</span>
+              </div>
+            </div>
+          </div>
         `;
+        
+        // Setup export dropdown
+        setupExportDropdown();
         
         // Store data for clipboard
         window.promptData = prompt;
@@ -1270,6 +1326,8 @@
       if (msg.type === 'error') {
         emptyState.style.display = 'none';
         editorDiv.classList.remove('visible');
+        document.getElementById('loadingState').classList.remove('visible');
+        document.getElementById('process').disabled = false;
         resultDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${msg.message}</div>`;
         resultDiv.classList.add('visible');
       }
@@ -1337,26 +1395,13 @@
           
           // Reset to edit hint after 2 seconds
           setTimeout(() => {
-            editHint.innerHTML = '<span>✏️</span><span>You can edit this prompt directly. Changes are saved automatically.</span>';
+            editHint.innerHTML = '<span>✏️</span><span>You can edit this text directly. Changes are saved automatically.</span>';
             editHint.classList.remove('saved');
           }, 2000);
         }, 800);
       });
     }
     
-    function toggleSection(header) {
-      const content = header.nextElementSibling;
-      const isExpanded = header.classList.contains('expanded');
-      
-      if (isExpanded) {
-        header.classList.remove('expanded');
-        content.style.display = 'none';
-      } else {
-        header.classList.add('expanded');
-        content.style.display = 'block';
-      }
-    }
-
     function toggleSection(header) {
       const content = header.nextElementSibling;
       const isExpanded = header.classList.contains('expanded');
@@ -1408,8 +1453,8 @@
           copyPromptOnly();
         };
       } else {
-        title.textContent = '✓ Copied text-only!';
-        details.textContent = 'Prompt copied to clipboard';
+        title.textContent = '✓ Copied!';
+        details.textContent = 'Specification copied to clipboard';
         if (screenshotCount > 0) {
           toggle.textContent = `Click to include ${screenshotCount} screenshot${screenshotCount > 1 ? 's' : ''}`;
           toggle.onclick = () => {
@@ -1527,17 +1572,73 @@
     }
     
     /**
+     * Setup export dropdown menu interactions
+     * Handles menu toggling and export action dispatching
+     */
+    function setupExportDropdown() {
+      const exportBtn = document.getElementById('exportBtn');
+      const exportMenu = document.getElementById('exportMenu');
+      
+      if (!exportBtn || !exportMenu) return;
+      
+      // Toggle menu
+      exportBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        // Position menu directly above the button
+        const rect = exportBtn.getBoundingClientRect();
+        const menuHeight = 200; // Approximate height of 4 items
+        
+        // Calculate position above the button with some padding
+        const bottomPos = window.innerHeight - rect.top + 4;
+        
+        // Position menu above button, aligned to the left edge
+        exportMenu.style.bottom = `${bottomPos}px`;
+        exportMenu.style.left = `${rect.left}px`;
+        exportMenu.style.right = 'auto';
+        exportMenu.style.top = 'auto';
+        exportMenu.style.width = `${rect.width}px`;
+        
+        exportMenu.classList.toggle('visible');
+      });
+      
+      // Handle menu item clicks
+      exportMenu.addEventListener('click', (e) => {
+        const item = e.target.closest('.export-menu-item');
+        if (!item) return;
+        
+        const action = item.getAttribute('data-action');
+        exportMenu.classList.remove('visible');
+        
+        switch (action) {
+          case 'download-txt':
+            downloadPrompt('txt');
+            break;
+          case 'download-md':
+            downloadPrompt('md');
+            break;
+          case 'download-json':
+            downloadPrompt('json');
+            break;
+          case 'download-html':
+            downloadPrompt('html');
+            break;
+        }
+      });
+    }
+    
+    /**
      * Download prompt in various formats
      * Respects screenshot toggle setting for all formats
      * 
-     * @param format - Export format: 'txt' (plain text), 'md' (markdown with images), or 'json' (structured data)
+     * @param format - Export format: 'txt', 'md', 'json', or 'html'
      */
     function downloadPrompt(format) {
       const textarea = document.getElementById('promptTextarea');
       const promptText = textarea ? textarea.value : window.promptData;
       
       if (!promptText) {
-        alert('No prompt to download');
+        alert('Nothing to download yet');
         return;
       }
       
@@ -1579,6 +1680,77 @@
         content = JSON.stringify(jsonData, null, 2);
         filename = 'atlas-prompt.json';
         mimeType = 'application/json';
+      } else if (format === 'html') {
+        // Generate standalone HTML file with embedded prompt and screenshots
+        let htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas Prompt - ${new Date().toLocaleDateString()}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      line-height: 1.6;
+      color: #333;
+    }
+    h1 { color: #0d99ff; border-bottom: 3px solid #0d99ff; padding-bottom: 10px; }
+    h2 { color: #333; margin-top: 40px; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 30px; }
+    .screenshots { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin: 30px 0; }
+    .screenshot { border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; }
+    .screenshot img { width: 100%; display: block; }
+    .screenshot-label { padding: 10px; background: #f9f9f9; font-weight: 600; font-size: 14px; }
+    .prompt { background: #f9f9f9; border-left: 4px solid #0d99ff; padding: 20px; white-space: pre-wrap; font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 13px; overflow-x: auto; }
+    .copy-btn { background: #0d99ff; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+    .copy-btn:hover { background: #0c8ae6; }
+  </style>
+</head>
+<body>
+  <h1>🎨 Atlas Prompt Specification</h1>
+  <div class="meta">
+    Generated on ${new Date().toLocaleString()}<br>
+    Screens: ${window.extractedFrames ? window.extractedFrames.length : 0} | 
+    Characters: ${promptText.length.toLocaleString()}
+  </div>
+`;
+        
+        if (includeScreenshots && window.screenshots && Object.keys(window.screenshots).length > 0) {
+          htmlContent += '<h2>📸 Screen Previews</h2>\n<div class="screenshots">\n';
+          window.extractedFrames.forEach((frame) => {
+            if (window.screenshots[frame.id]) {
+              htmlContent += `  <div class="screenshot">
+    <img src="${window.screenshots[frame.id]}" alt="${frame.name}">
+    <div class="screenshot-label">${frame.name}</div>
+  </div>\n`;
+            }
+          });
+          htmlContent += '</div>\n\n';
+        }
+        
+        htmlContent += `<h2>📝 Specification</h2>
+  <button class="copy-btn" onclick="copyPrompt()">📋 Copy</button>
+  <div class="prompt" id="prompt">${promptText.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+  
+  <sc` + `ript>
+    function copyPrompt() {
+      const prompt = document.getElementById('prompt').textContent;
+      navigator.clipboard.writeText(prompt).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = '✓ Copied!';
+        setTimeout(() => btn.textContent = '📋 Copy', 2000);
+      });
+    }
+  </sc` + `ript>
+</body>
+</html>`;
+        
+        content = htmlContent;
+        filename = 'atlas-prompt.html';
+        mimeType = 'text/html';
       }
       
       // Create download
@@ -1592,9 +1764,101 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // Show feedback
-      const formatName = format.toUpperCase();
-      alert(`✓ Downloaded as ${formatName}\n\nFile: ${filename}`);
+      // Show feedback with toast instead of alert
+      showToast(`✓ Downloaded as ${format.toUpperCase()}`, `File: ${filename}`);
+    }
+    
+    /**
+     * Save current section configuration as a template
+     * Stores in localStorage for quick reuse across sessions
+     */
+    function saveTemplate() {
+      const templateName = prompt('Enter a name for this template:', 'My Template');
+      if (!templateName) return;
+      
+      const sections = {
+        includeLayout: document.getElementById('includeLayout')?.checked ?? true,
+        includeComponents: document.getElementById('includeComponents')?.checked ?? true,
+        includeVisualTheme: document.getElementById('includeVisualTheme')?.checked ?? true,
+        includeResponsive: document.getElementById('includeResponsive')?.checked ?? true,
+        includeAccessibility: document.getElementById('includeAccessibility')?.checked ?? true,
+        includeContent: document.getElementById('includeContent')?.checked ?? true,
+        includeConsistency: document.getElementById('includeConsistency')?.checked ?? true
+      };
+      
+      // Store in localStorage
+      const templates = JSON.parse(localStorage.getItem('atlasTemplates') || '{}');
+      templates[templateName] = {
+        sections,
+        createdAt: new Date().toISOString()
+      };
+      localStorage.setItem('atlasTemplates', JSON.stringify(templates));
+      
+      showToast('✓ Template Saved', `"${templateName}" is ready to use`);
+    }
+    
+    /**
+     * Load a previously saved template
+     * Presents list of available templates to choose from
+     */
+    function loadTemplate() {
+      const templates = JSON.parse(localStorage.getItem('atlasTemplates') || '{}');
+      const templateNames = Object.keys(templates);
+      
+      if (templateNames.length === 0) {
+        alert('No saved templates found.\n\nCreate a template by configuring sections and clicking "Save as Template".');
+        return;
+      }
+      
+      let message = 'Choose a template:\n\n';
+      templateNames.forEach((name, i) => {
+        message += `${i + 1}. ${name}\n`;
+      });
+      
+      const choice = prompt(message + '\nEnter the number:');
+      if (!choice) return;
+      
+      const index = parseInt(choice) - 1;
+      if (index < 0 || index >= templateNames.length) {
+        alert('Invalid choice');
+        return;
+      }
+      
+      const templateName = templateNames[index];
+      const template = templates[templateName];
+      
+      // Apply template sections
+      Object.keys(template.sections).forEach(key => {
+        const checkbox = document.getElementById(key);
+        if (checkbox) checkbox.checked = template.sections[key];
+      });
+      
+      showToast('✓ Template Loaded', `"${templateName}" applied`);
+    }
+    
+    /**
+     * Show non-blocking toast notification
+     * Better UX than alert() - doesn't interrupt workflow
+     * 
+     * @param title - Main message
+     * @param subtitle - Optional details
+     */
+    function showToast(title, subtitle = '') {
+      const feedback = document.getElementById('copyFeedback');
+      const feedbackTitle = document.getElementById('feedbackTitle');
+      const feedbackDetails = document.getElementById('feedbackDetails');
+      const feedbackToggle = document.getElementById('feedbackToggle');
+      
+      if (!feedback) return;
+      
+      feedbackTitle.textContent = title;
+      feedbackDetails.textContent = subtitle;
+      feedbackToggle.textContent = '';
+      
+      feedback.classList.add('visible');
+      setTimeout(() => {
+        feedback.classList.remove('visible');
+      }, 2500);
     }
     
     /**
@@ -1659,16 +1923,48 @@
       const textarea = document.getElementById('promptTextarea');
       const promptText = textarea ? textarea.value : window.promptData;
       
-      // Send just the text prompt via URL (no screenshots due to size limits)
-      const encodedPrompt = encodeURIComponent(promptText);
-      const v0Url = `https://v0.dev/chat?q=${encodedPrompt}`;
+      const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
+      const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
       
-      const screenshotCount = window.screenshots ? Object.keys(window.screenshots).length : 0;
-      if (screenshotCount > 0) {
-        alert(`Opening v0.dev with your specification...\n\nNote: Screenshots remain in the plugin. You can drag them into v0's chat if needed.`);
+      // Create a more comprehensive v0 message
+      let v0Message = '# Design Specification\n\n';
+      v0Message += `Generated by Atlas Prompt Compiler on ${new Date().toLocaleDateString()}\n\n`;
+      
+      if (includeScreenshots && window.screenshots && Object.keys(window.screenshots).length > 0) {
+        v0Message += `📸 **Note**: ${Object.keys(window.screenshots).length} screenshot${Object.keys(window.screenshots).length > 1 ? 's are' : ' is'} available. `;
+        v0Message += `You can paste them directly into this chat for visual reference.\n\n`;
+        v0Message += '---\n\n';
       }
       
-      window.open(v0Url, '_blank');
+      v0Message += promptText;
+      
+      // URL encode with truncation for very long prompts
+      const maxLength = 8000; // URL length limit consideration
+      const messageToSend = v0Message.length > maxLength 
+        ? v0Message.substring(0, maxLength) + '\n\n[...truncated for URL length. Copy full prompt from plugin]'
+        : v0Message;
+      
+      const encodedPrompt = encodeURIComponent(messageToSend);
+      const v0Url = `https://v0.dev/chat?q=${encodedPrompt}`;
+      
+      // Copy full prompt with screenshots to clipboard for easy pasting
+      if (includeScreenshots) {
+        const fullPrompt = getFullPromptWithScreenshots();
+        copyToClipboard(fullPrompt);
+        
+        showToast(
+          '🚀 Opening v0.dev...', 
+          'Full prompt + screenshots copied to clipboard! Paste into v0 chat for best results.'
+        );
+      } else {
+        copyToClipboard(promptText);
+        showToast('🚀 Opening v0.dev...', 'Prompt copied to clipboard');
+      }
+      
+      // Open v0.dev
+      setTimeout(() => {
+        window.open(v0Url, '_blank');
+      }, 500);
     }
     
     function reset() {
@@ -1682,13 +1978,14 @@
       editorDiv.classList.remove('visible');
       editorDiv.innerHTML = '';
       emptyState.style.display = 'flex';
+      
       window.promptData = null;
       window.extractedFrames = null;
       window.designSystemData = null;
       
       // Restore original button
       actionBar.innerHTML = `
-        <button id="process" class="btn-primary">Extract Design Intent</button>
+        <button id="process" class="btn-primary">Get Started</button>
       `;
     }
   </script>
