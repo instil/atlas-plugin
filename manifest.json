@@ -6,6 +6,6 @@
   "ui": "src/ui.html",
   "editorType": ["figma"],
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": ["https://api.v0.dev"]
   }
 }

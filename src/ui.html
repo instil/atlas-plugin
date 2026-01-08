@@ -822,8 +822,23 @@
 </head>
 <body>
   <div class="header">
-    <h2>🎨 Atlas Prompt Compiler</h2>
-    <p>Select one or more frames in your design to create a detailed specification for AI tools</p>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <h2>🎨 Atlas Prompt Compiler</h2>
+        <p>Select one or more frames in your design to create a detailed specification for AI tools</p>
+      </div>
+      <button 
+        id="settingsBtn" 
+        onclick="openSettings()" 
+        style="padding: 8px 12px; background: white; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: all 0.15s ease;"
+        onmouseover="this.style.background='#f5f5f5'; this.style.borderColor='#999';"
+        onmouseout="this.style.background='white'; this.style.borderColor='#d9d9d9';"
+        title="v0 API Settings"
+      >
+        <span>⚙️</span>
+        <span>Settings</span>
+      </button>
+    </div>
   </div>
   
   <div class="content">
@@ -980,6 +995,56 @@
           </div>
         `;
       }).join('');
+    }
+    
+    /**
+     * Open API key settings dialog
+     * Allows user to view, set, or clear their v0 API key
+     */
+    function openSettings() {
+      const currentKey = localStorage.getItem('v0ApiKey') || '';
+      const hasKey = currentKey.length > 0;
+      
+      let message = 'v0 API Key Settings\n\n';
+      
+      if (hasKey) {
+        // Mask the key for security
+        const maskedKey = currentKey.substring(0, 8) + '...' + currentKey.substring(currentKey.length - 4);
+        message += `Current API Key: ${maskedKey}\n\n`;
+        message += 'Options:\n';
+        message += '1. Keep current key (Cancel)\n';
+        message += '2. Enter new key (OK then type new key)\n';
+        message += '3. Remove key (OK then leave blank)\n\n';
+        message += 'What would you like to do?';
+      } else {
+        message += 'No API key set.\n\n';
+        message += 'To use v0 SDK integration, you need a v0 API key.\n';
+        message += 'Get your API key from: https://v0.dev (Settings → API Keys)\n\n';
+        message += 'Click OK to enter your API key, or Cancel to skip.';
+      }
+      
+      const userChoice = confirm(message);
+      
+      if (userChoice) {
+        const newKey = prompt(
+          'Enter your v0 API Key:\n\n' +
+          '(Leave blank to remove current key)\n\n' +
+          'Get your key from: https://v0.dev → Settings → API Keys'
+        );
+        
+        if (newKey === null) {
+          // User cancelled
+          return;
+        } else if (newKey.trim() === '') {
+          // Remove key
+          localStorage.removeItem('v0ApiKey');
+          alert('API key removed.\n\nYou can set it again anytime from Settings.');
+        } else {
+          // Set new key
+          localStorage.setItem('v0ApiKey', newKey.trim());
+          alert('✓ API key saved!\n\nYou can now use the v0 SDK integration.');
+        }
+      }
     }
     
     window.onmessage = (event) => {
@@ -1321,6 +1386,49 @@
         
         // Setup gallery toggle
         setupGalleryToggle();
+      }
+      
+      // Handle v0 SDK success response
+      if (msg.type === 'v0-success') {
+        const { webUrl, demoUrl } = msg.data;
+        
+        // Show success message with links
+        showToast(
+          '✓ v0 Project Created!',
+          'Opening project in new tab...'
+        );
+        
+        // Open the v0 project
+        if (webUrl) {
+          setTimeout(() => {
+            window.open(webUrl, '_blank');
+          }, 500);
+        }
+        
+        // Log demo URL for reference
+        if (demoUrl) {
+          console.log('v0 Demo URL:', demoUrl);
+        }
+      }
+      
+      // Handle v0 SDK error response
+      if (msg.type === 'v0-error') {
+        // Show error and fall back to manual method
+        console.error('v0 SDK error:', msg.message);
+        
+        alert(
+          'v0 SDK Integration Error\n\n' +
+          msg.message + '\n\n' +
+          'Falling back to manual v0.dev integration...'
+        );
+        
+        // Fall back to manual method
+        const textarea = document.getElementById('promptTextarea');
+        const promptText = textarea ? textarea.value : window.promptData;
+        const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
+        const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
+        
+        sendToV0Manual(promptText, includeScreenshots);
       }
       
       if (msg.type === 'error') {
@@ -1926,6 +2034,69 @@
       const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
       const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
       
+      // Check for API key
+      const apiKey = localStorage.getItem('v0ApiKey') || '';
+      
+      // If no API key, offer to set one
+      if (!apiKey) {
+        const userChoice = confirm(
+          'v0 SDK Integration\n\n' +
+          'To use the v0 SDK to automatically create projects, you need a V0_API_KEY.\n\n' +
+          'Click OK to set your API key now, or Cancel to open v0.dev manually instead.'
+        );
+        
+        if (userChoice) {
+          const newKey = prompt(
+            'Enter your v0 API Key:\n\n' +
+            'You can get your API key from v0.dev (Settings → API Keys)\n\n' +
+            'The key will be stored securely in your browser.'
+          );
+          
+          if (newKey && newKey.trim()) {
+            localStorage.setItem('v0ApiKey', newKey.trim());
+            showToast('✓ API Key Saved', 'Sending to v0.dev...');
+            sendToV0WithSDK(promptText, includeScreenshots);
+          } else {
+            // User cancelled or entered empty key, fall back to manual
+            sendToV0Manual(promptText, includeScreenshots);
+          }
+        } else {
+          // User chose to open manually
+          sendToV0Manual(promptText, includeScreenshots);
+        }
+      } else {
+        // Have API key, try SDK integration
+        sendToV0WithSDK(promptText, includeScreenshots);
+      }
+    }
+    
+    /**
+     * Send to v0 using SDK integration (via plugin backend)
+     */
+    function sendToV0WithSDK(promptText, includeScreenshots) {
+      const apiKey = localStorage.getItem('v0ApiKey') || '';
+      
+      showToast('🚀 Sending to v0.dev...', 'Creating project via v0 SDK');
+      
+      // Send message to plugin backend
+      parent.postMessage({
+        pluginMessage: {
+          type: 'v0-send',
+          data: {
+            prompt: promptText,
+            screenshots: includeScreenshots ? window.screenshots : {},
+            apiKey: apiKey
+          }
+        }
+      }, '*');
+      
+      // Note: Response will be handled by onmessage handler below
+    }
+    
+    /**
+     * Send to v0 manually (opens v0.dev with prompt in URL)
+     */
+    function sendToV0Manual(promptText, includeScreenshots) {
       // Create a more comprehensive v0 message
       let v0Message = '# Design Specification\n\n';
       v0Message += `Generated by Atlas Prompt Compiler on ${new Date().toLocaleDateString()}\n\n`;
