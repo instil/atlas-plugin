@@ -967,6 +967,21 @@
     }
     
     /**
+     * Escape HTML special characters to prevent XSS attacks
+     * @param {string} unsafe - Potentially unsafe user input
+     * @returns {string} HTML-safe string
+     */
+    function escapeHtml(unsafe) {
+      if (typeof unsafe !== 'string') return '';
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+    
+    /**
      * Render color list with visual swatches and semantic roles
      * @param {Object} designSystem - The design system containing colors and colorRoles
      * @returns {string} HTML string for color list
@@ -1008,9 +1023,9 @@
       let message = 'v0 API Key Settings\n\n';
       
       if (hasKey) {
-        // Mask the key for security
-        const maskedKey = currentKey.substring(0, 8) + '...' + currentKey.substring(currentKey.length - 4);
-        message += `Current API Key: ${maskedKey}\n\n`;
+        // Show only that a key is configured (don't reveal partial key)
+        message += 'API Key: ••••••••••••••••\n';
+        message += 'Status: Configured\n\n';
         message += 'Options:\n';
         message += '1. Keep current key (Cancel)\n';
         message += '2. Enter new key (OK then type new key)\n';
@@ -1020,6 +1035,11 @@
         message += 'No API key set.\n\n';
         message += 'To use v0 SDK integration, you need a v0 API key.\n';
         message += 'Get your API key from: https://v0.dev (Settings → API Keys)\n\n';
+        message += '⚠️ SECURITY NOTES:\n';
+        message += '• Your API key will be stored locally in your browser\n';
+        message += '• Keep your computer secure and locked when away\n';
+        message += '• Anyone with access to your browser can view this key\n';
+        message += '• Rotate your key regularly from v0.dev settings\n\n';
         message += 'Click OK to enter your API key, or Cancel to skip.';
       }
       
@@ -1029,7 +1049,8 @@
         const newKey = prompt(
           'Enter your v0 API Key:\n\n' +
           '(Leave blank to remove current key)\n\n' +
-          'Get your key from: https://v0.dev → Settings → API Keys'
+          'Get your key from: https://v0.dev → Settings → API Keys\n\n' +
+          '⚠️ The key will be stored in your browser\'s localStorage'
         );
         
         if (newKey === null) {
@@ -1097,8 +1118,8 @@
             if (screenshots[frame.id]) {
               html += `
                 <div class="screenshot-item">
-                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
-                  <div class="screenshot-label">${frame.name}</div>
+                  <img src="${screenshots[frame.id]}" alt="${escapeHtml(frame.name)}" class="screenshot-image">
+                  <div class="screenshot-label">${escapeHtml(frame.name)}</div>
                 </div>
               `;
             }
@@ -1264,8 +1285,8 @@
             if (screenshots[frame.id]) {
               html += `
                 <div class="screenshot-item">
-                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
-                  <div class="screenshot-label">${frame.name}</div>
+                  <img src="${screenshots[frame.id]}" alt="${escapeHtml(frame.name)}" class="screenshot-image">
+                  <div class="screenshot-label">${escapeHtml(frame.name)}</div>
                 </div>
               `;
             }
@@ -1319,8 +1340,8 @@
           if (screenshots[frame.id]) {
             html += `
                 <div class="screenshot-item">
-                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
-                  <div class="screenshot-label">${frame.name}</div>
+                  <img src="${screenshots[frame.id]}" alt="${escapeHtml(frame.name)}" class="screenshot-image">
+                  <div class="screenshot-label">${escapeHtml(frame.name)}</div>
                 </div>
             `;
           }
@@ -1436,7 +1457,7 @@
         editorDiv.classList.remove('visible');
         document.getElementById('loadingState').classList.remove('visible');
         document.getElementById('process').disabled = false;
-        resultDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${msg.message}</div>`;
+        resultDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${escapeHtml(msg.message)}</div>`;
         resultDiv.classList.add('visible');
       }
     };
@@ -1455,8 +1476,8 @@
         fullPrompt += '# Screen Previews\n\n';
         window.extractedFrames.forEach((frame) => {
           if (window.screenshots[frame.id]) {
-            fullPrompt += `## ${frame.name}\n`;
-            fullPrompt += `![${frame.name}](${window.screenshots[frame.id]})\n\n`;
+            fullPrompt += `## ${escapeHtml(frame.name)}\n`;
+            fullPrompt += `![${escapeHtml(frame.name)}](${window.screenshots[frame.id]})\n\n`;
           }
         });
         fullPrompt += '---\n\n';
@@ -1766,8 +1787,8 @@
           markdown += '# Screen Previews\n\n';
           window.extractedFrames.forEach((frame) => {
             if (window.screenshots[frame.id]) {
-              markdown += `## ${frame.name}\n`;
-              markdown += `![${frame.name}](${window.screenshots[frame.id]})\n\n`;
+              markdown += `## ${escapeHtml(frame.name)}\n`;
+              markdown += `![${escapeHtml(frame.name)}](${window.screenshots[frame.id]})\n\n`;
             }
           });
           markdown += '---\n\n';
@@ -1831,8 +1852,8 @@
           window.extractedFrames.forEach((frame) => {
             if (window.screenshots[frame.id]) {
               htmlContent += `  <div class="screenshot">
-    <img src="${window.screenshots[frame.id]}" alt="${frame.name}">
-    <div class="screenshot-label">${frame.name}</div>
+    <img src="${window.screenshots[frame.id]}" alt="${escapeHtml(frame.name)}">
+    <div class="screenshot-label">${escapeHtml(frame.name)}</div>
   </div>\n`;
             }
           });
@@ -2075,6 +2096,27 @@
      */
     function sendToV0WithSDK(promptText, includeScreenshots) {
       const apiKey = localStorage.getItem('v0ApiKey') || '';
+      
+      // Privacy confirmation for first-time users
+      const hasSeenPrivacyNotice = localStorage.getItem('v0PrivacyNoticeShown');
+      if (!hasSeenPrivacyNotice) {
+        const confirmed = confirm(
+          '⚠️ Privacy Notice\n\n' +
+          'This will send your design specification and screenshots to v0.dev (a third-party service).\n\n' +
+          'By proceeding, you confirm that:\n' +
+          '• You have permission to share this design data\n' +
+          '• You understand v0.dev will process this data\n' +
+          '• Any sensitive/confidential information will be transmitted\n\n' +
+          'Continue?'
+        );
+        
+        if (!confirmed) {
+          return; // User cancelled
+        }
+        
+        // Remember that user has seen the notice
+        localStorage.setItem('v0PrivacyNoticeShown', 'true');
+      }
       
       showToast('🚀 Sending to v0.dev...', 'Creating project via v0 SDK');
       
