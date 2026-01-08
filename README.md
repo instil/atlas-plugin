@@ -315,70 +315,81 @@ Atlas now includes **direct integration with v0.dev** using the v0 SDK! This all
 - **Automatic Project Creation**: Send prompts directly to v0.dev via the SDK
 - **Screenshot Support**: Include design screenshots for better context
 - **API Key Management**: Secure storage of your v0 API key in browser localStorage
-- **Fallback Mode**: If SDK integration fails, automatically falls back to manual v0.dev URL method
+- **Smart Fallback**: Automatically uses manual v0.dev URL method (current) with future SDK integration planned
+
+### Current Implementation
+
+**Note**: Due to Figma's plugin sandbox environment limitations, the v0 SDK cannot currently be used directly within the plugin. The current implementation uses an enhanced manual method that:
+
+1. Prepares your prompt with design specifications
+2. Includes screenshots as context
+3. Opens v0.dev with the prompt pre-filled
+4. Copies everything to clipboard for easy pasting
+
+**Future Enhancement**: We're planning to add a server-side proxy to enable true SDK integration, which will allow automatic project creation and return direct links to generated v0 projects.
 
 ### Setup
 
-1. **Get your v0 API Key**:
+1. **Get your v0 API Key** (optional for now):
    - Visit [v0.dev](https://v0.dev)
    - Go to Settings → API Keys
    - Create a new API key
 
-2. **Configure the Plugin**:
+2. **Configure the Plugin** (optional):
    - Click the ⚙️ **Settings** button in the plugin header
    - Enter your v0 API key when prompted
    - The key is stored securely in your browser's localStorage
-
-3. **Alternative: GitHub Secrets** (for team/CI usage):
-   - Set `V0_API_KEY` as an environment variable
-   - The plugin will automatically detect and use it
+   - Note: Currently used for future SDK integration
 
 ### Usage
 
 1. Generate your design specification as usual
 2. Click the 🚀 **v0** button in the prompt header
-3. Choose one of two options:
-   - **With API Key**: Automatically creates a v0 project via SDK and opens it
-   - **Without API Key**: Opens v0.dev with the prompt pre-filled (manual method)
+3. The plugin will:
+   - Copy your prompt and screenshots to clipboard
+   - Open v0.dev with the prompt pre-filled
+   - Allow you to paste screenshots directly into v0 chat
 
-### How It Works
+### How It Works (Current)
 
-When you have an API key configured:
+The current implementation uses an enhanced manual workflow:
 
-1. The plugin calls the v0 SDK via the backend
-2. Creates a new chat/project with your design specification
-3. Includes screenshots as context (inline in the prompt)
-4. Returns a link to the generated project
-5. Automatically opens the project in a new tab
+1. User clicks the 🚀 **v0** button
+2. Plugin prepares comprehensive prompt with design specifications
+3. Optionally includes screenshot context in the message
+4. Opens v0.dev with the prompt as a URL parameter
+5. Copies full prompt + screenshots to clipboard
+6. User can paste screenshots directly into v0 chat for visual reference
 
-**Note**: Screenshot attachments require public URLs. The current implementation includes screenshots inline in the prompt. For optimal results with large image files, consider using an external image hosting service.
+**Planned Enhancement**: Direct SDK integration via server proxy will enable:
+- Automatic v0 project creation without manual steps
+- Direct screenshot attachment as URLs
+- Instant return link to generated project
+- No clipboard/paste required
 
 ### API Key Security
 
-- **Local Storage**: API keys are stored in your browser's localStorage
+- **Local Storage**: API keys are stored in your browser's localStorage (ready for future SDK integration)
 - **Not Committed**: Keys are never committed to the repository
 - **User-Controlled**: You can view, update, or remove your key anytime via Settings
-- **Team Usage**: For shared/CI environments, use the `V0_API_KEY` environment variable
+- **Security Warnings**: Clear notices about storage and security implications
+- **Privacy First**: Consent required before sending data to v0.dev
 
 ### Troubleshooting
 
-**"V0_API_KEY is required"**: Click Settings and enter your API key from v0.dev
+**"Direct v0 SDK integration is not available"**: This is expected. The plugin currently uses the enhanced manual method (opens v0.dev with prompt). Full SDK integration is planned for a future update.
 
-**"v0 SDK Integration Error"**: The plugin will automatically fall back to opening v0.dev manually. Check:
-- Your API key is valid
-- Network access is enabled in the manifest
-- The v0.dev API is accessible
+**Prompt not appearing in v0**: Very long prompts may be truncated in URL. Use the "Copy" button and paste into v0.dev manually.
 
-**Screenshots not appearing in v0**: Currently screenshots are included inline. For best results:
-- Use the "Include screenshots" toggle
-- Paste screenshots manually into v0 chat after opening
-- Consider implementing external image hosting for automatic attachment
+**Screenshots not appearing in v0**: Paste screenshots from clipboard into v0 chat after the page opens. The plugin copies them automatically.
 
 ## Future Enhancements
 
 Potential improvements:
-- [x] Direct integration with v0.dev via SDK
-- [ ] External image hosting for screenshot attachments
+- [x] Basic v0.dev integration (enhanced manual method)
+- [ ] **Server-side proxy for full v0 SDK integration**
+- [ ] **Automatic screenshot upload to image hosting**
+- [ ] Direct v0 project creation with instant links
 - [ ] Component library integration
 - [ ] Variant detection and documentation
 - [ ] Animation/transition specifications

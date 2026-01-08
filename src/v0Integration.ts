@@ -66,6 +66,9 @@ export async function sendToV0(
 
   // Check if we're in a Figma plugin environment
   // Figma plugins have limited network access and can't use Node.js modules directly
+  // NOTE: Due to Figma's sandbox environment, the v0-sdk currently cannot be used directly
+  // This function returns an error, and the UI falls back to the manual v0.dev URL method
+  // Future improvement: Implement a server-side proxy to enable full SDK integration
   const isFigmaEnv = typeof figma !== 'undefined';
 
   if (isFigmaEnv) {
