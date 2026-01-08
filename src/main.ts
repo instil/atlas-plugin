@@ -30,6 +30,7 @@
 import { normalizeFrame, extractDesignSystem } from './normalizeNode';
 import { compileUnifiedPrompt } from './promptCompiler';
 import type { ProcessedFrame } from './types';
+import { sendToV0, type Screenshot } from './v0Integration';
 
 /**
  * Sanitize data for UI communication by handling symbols and circular references
@@ -140,6 +141,50 @@ figma.ui.onmessage = async (msg) => {
       figma.ui.postMessage({ 
         type: 'error', 
         message: `Error generating prompt: ${error instanceof Error ? error.message : String(error)}` 
+      });
+    }
+  }
+
+  if (msg.type === 'v0-send') {
+    // Send to v0.dev using the v0 SDK
+    try {
+      const { prompt, screenshots, apiKey } = msg.data;
+      
+      // Convert screenshot data to Screenshot interface format
+      const screenshotData: Screenshot[] = [];
+      if (screenshots && typeof screenshots === 'object') {
+        for (const [id, base64Data] of Object.entries(screenshots)) {
+          if (typeof base64Data === 'string') {
+            screenshotData.push({
+              id: id,
+              name: `frame-${id}`,
+              base64Data: base64Data
+            });
+          }
+        }
+      }
+      
+      // Call v0 integration
+      const result = await sendToV0(prompt, screenshotData, apiKey || '');
+      
+      if (result.success) {
+        figma.ui.postMessage({
+          type: 'v0-success',
+          data: {
+            webUrl: result.webUrl,
+            demoUrl: result.demoUrl
+          }
+        });
+      } else {
+        figma.ui.postMessage({
+          type: 'v0-error',
+          message: result.error || 'Unknown error occurred'
+        });
+      }
+    } catch (error) {
+      figma.ui.postMessage({
+        type: 'v0-error',
+        message: `Error sending to v0: ${error instanceof Error ? error.message : String(error)}`
       });
     }
   }

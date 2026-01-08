@@ -822,8 +822,23 @@
 </head>
 <body>
   <div class="header">
-    <h2>🎨 Atlas Prompt Compiler</h2>
-    <p>Select one or more frames in your design to create a detailed specification for AI tools</p>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <div>
+        <h2>🎨 Atlas Prompt Compiler</h2>
+        <p>Select one or more frames in your design to create a detailed specification for AI tools</p>
+      </div>
+      <button 
+        id="settingsBtn" 
+        onclick="openSettings()" 
+        style="padding: 8px 12px; background: white; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; font-size: 12px; display: flex; align-items: center; gap: 6px; transition: all 0.15s ease;"
+        onmouseover="this.style.background='#f5f5f5'; this.style.borderColor='#999';"
+        onmouseout="this.style.background='white'; this.style.borderColor='#d9d9d9';"
+        title="v0 API Settings"
+      >
+        <span>⚙️</span>
+        <span>Settings</span>
+      </button>
+    </div>
   </div>
   
   <div class="content">
@@ -952,6 +967,21 @@
     }
     
     /**
+     * Escape HTML special characters to prevent XSS attacks
+     * @param {string} unsafe - Potentially unsafe user input
+     * @returns {string} HTML-safe string
+     */
+    function escapeHtml(unsafe) {
+      if (typeof unsafe !== 'string') return '';
+      return unsafe
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+    
+    /**
      * Render color list with visual swatches and semantic roles
      * @param {Object} designSystem - The design system containing colors and colorRoles
      * @returns {string} HTML string for color list
@@ -980,6 +1010,62 @@
           </div>
         `;
       }).join('');
+    }
+    
+    /**
+     * Open API key settings dialog
+     * Allows user to view, set, or clear their v0 API key
+     */
+    function openSettings() {
+      const currentKey = localStorage.getItem('v0ApiKey') || '';
+      const hasKey = currentKey.length > 0;
+      
+      let message = 'v0 API Key Settings\n\n';
+      
+      if (hasKey) {
+        // Show only that a key is configured (don't reveal partial key)
+        message += 'API Key: ••••••••••••••••\n';
+        message += 'Status: Configured\n\n';
+        message += 'Options:\n';
+        message += '1. Keep current key (Cancel)\n';
+        message += '2. Enter new key (OK then type new key)\n';
+        message += '3. Remove key (OK then leave blank)\n\n';
+        message += 'What would you like to do?';
+      } else {
+        message += 'No API key set.\n\n';
+        message += 'To use v0 SDK integration, you need a v0 API key.\n';
+        message += 'Get your API key from: https://v0.dev (Settings → API Keys)\n\n';
+        message += '⚠️ SECURITY NOTES:\n';
+        message += '• Your API key will be stored locally in your browser\n';
+        message += '• Keep your computer secure and locked when away\n';
+        message += '• Anyone with access to your browser can view this key\n';
+        message += '• Rotate your key regularly from v0.dev settings\n\n';
+        message += 'Click OK to enter your API key, or Cancel to skip.';
+      }
+      
+      const userChoice = confirm(message);
+      
+      if (userChoice) {
+        const newKey = prompt(
+          'Enter your v0 API Key:\n\n' +
+          '(Leave blank to remove current key)\n\n' +
+          'Get your key from: https://v0.dev → Settings → API Keys\n\n' +
+          '⚠️ The key will be stored in your browser\'s localStorage'
+        );
+        
+        if (newKey === null) {
+          // User cancelled
+          return;
+        } else if (newKey.trim() === '') {
+          // Remove key
+          localStorage.removeItem('v0ApiKey');
+          alert('API key removed.\n\nYou can set it again anytime from Settings.');
+        } else {
+          // Set new key
+          localStorage.setItem('v0ApiKey', newKey.trim());
+          alert('✓ API key saved!\n\nYou can now use the v0 SDK integration.');
+        }
+      }
     }
     
     window.onmessage = (event) => {
@@ -1032,8 +1118,8 @@
             if (screenshots[frame.id]) {
               html += `
                 <div class="screenshot-item">
-                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
-                  <div class="screenshot-label">${frame.name}</div>
+                  <img src="${screenshots[frame.id]}" alt="${escapeHtml(frame.name)}" class="screenshot-image">
+                  <div class="screenshot-label">${escapeHtml(frame.name)}</div>
                 </div>
               `;
             }
@@ -1199,8 +1285,8 @@
             if (screenshots[frame.id]) {
               html += `
                 <div class="screenshot-item">
-                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
-                  <div class="screenshot-label">${frame.name}</div>
+                  <img src="${screenshots[frame.id]}" alt="${escapeHtml(frame.name)}" class="screenshot-image">
+                  <div class="screenshot-label">${escapeHtml(frame.name)}</div>
                 </div>
               `;
             }
@@ -1254,8 +1340,8 @@
           if (screenshots[frame.id]) {
             html += `
                 <div class="screenshot-item">
-                  <img src="${screenshots[frame.id]}" alt="${frame.name}" class="screenshot-image">
-                  <div class="screenshot-label">${frame.name}</div>
+                  <img src="${screenshots[frame.id]}" alt="${escapeHtml(frame.name)}" class="screenshot-image">
+                  <div class="screenshot-label">${escapeHtml(frame.name)}</div>
                 </div>
             `;
           }
@@ -1323,12 +1409,55 @@
         setupGalleryToggle();
       }
       
+      // Handle v0 SDK success response
+      if (msg.type === 'v0-success') {
+        const { webUrl, demoUrl } = msg.data;
+        
+        // Show success message with links
+        showToast(
+          '✓ v0 Project Created!',
+          'Opening project in new tab...'
+        );
+        
+        // Open the v0 project
+        if (webUrl) {
+          setTimeout(() => {
+            window.open(webUrl, '_blank');
+          }, 500);
+        }
+        
+        // Log demo URL for reference
+        if (demoUrl) {
+          console.log('v0 Demo URL:', demoUrl);
+        }
+      }
+      
+      // Handle v0 SDK error response
+      if (msg.type === 'v0-error') {
+        // Show error and fall back to manual method
+        console.error('v0 SDK error:', msg.message);
+        
+        alert(
+          'v0 SDK Integration Error\n\n' +
+          msg.message + '\n\n' +
+          'Falling back to manual v0.dev integration...'
+        );
+        
+        // Fall back to manual method
+        const textarea = document.getElementById('promptTextarea');
+        const promptText = textarea ? textarea.value : window.promptData;
+        const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
+        const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
+        
+        sendToV0Manual(promptText, includeScreenshots);
+      }
+      
       if (msg.type === 'error') {
         emptyState.style.display = 'none';
         editorDiv.classList.remove('visible');
         document.getElementById('loadingState').classList.remove('visible');
         document.getElementById('process').disabled = false;
-        resultDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${msg.message}</div>`;
+        resultDiv.innerHTML = `<div class="error"><strong>Error:</strong> ${escapeHtml(msg.message)}</div>`;
         resultDiv.classList.add('visible');
       }
     };
@@ -1347,8 +1476,8 @@
         fullPrompt += '# Screen Previews\n\n';
         window.extractedFrames.forEach((frame) => {
           if (window.screenshots[frame.id]) {
-            fullPrompt += `## ${frame.name}\n`;
-            fullPrompt += `![${frame.name}](${window.screenshots[frame.id]})\n\n`;
+            fullPrompt += `## ${escapeHtml(frame.name)}\n`;
+            fullPrompt += `![${escapeHtml(frame.name)}](${window.screenshots[frame.id]})\n\n`;
           }
         });
         fullPrompt += '---\n\n';
@@ -1658,8 +1787,8 @@
           markdown += '# Screen Previews\n\n';
           window.extractedFrames.forEach((frame) => {
             if (window.screenshots[frame.id]) {
-              markdown += `## ${frame.name}\n`;
-              markdown += `![${frame.name}](${window.screenshots[frame.id]})\n\n`;
+              markdown += `## ${escapeHtml(frame.name)}\n`;
+              markdown += `![${escapeHtml(frame.name)}](${window.screenshots[frame.id]})\n\n`;
             }
           });
           markdown += '---\n\n';
@@ -1723,8 +1852,8 @@
           window.extractedFrames.forEach((frame) => {
             if (window.screenshots[frame.id]) {
               htmlContent += `  <div class="screenshot">
-    <img src="${window.screenshots[frame.id]}" alt="${frame.name}">
-    <div class="screenshot-label">${frame.name}</div>
+    <img src="${window.screenshots[frame.id]}" alt="${escapeHtml(frame.name)}">
+    <div class="screenshot-label">${escapeHtml(frame.name)}</div>
   </div>\n`;
             }
           });
@@ -1926,6 +2055,90 @@
       const includeScreenshotsCheckbox = document.getElementById('includeScreenshots');
       const includeScreenshots = includeScreenshotsCheckbox ? includeScreenshotsCheckbox.checked : false;
       
+      // Check for API key
+      const apiKey = localStorage.getItem('v0ApiKey') || '';
+      
+      // If no API key, offer to set one
+      if (!apiKey) {
+        const userChoice = confirm(
+          'v0 SDK Integration\n\n' +
+          'To use the v0 SDK to automatically create projects, you need a V0_API_KEY.\n\n' +
+          'Click OK to set your API key now, or Cancel to open v0.dev manually instead.'
+        );
+        
+        if (userChoice) {
+          const newKey = prompt(
+            'Enter your v0 API Key:\n\n' +
+            'You can get your API key from v0.dev (Settings → API Keys)\n\n' +
+            'The key will be stored securely in your browser.'
+          );
+          
+          if (newKey && newKey.trim()) {
+            localStorage.setItem('v0ApiKey', newKey.trim());
+            showToast('✓ API Key Saved', 'Sending to v0.dev...');
+            sendToV0WithSDK(promptText, includeScreenshots);
+          } else {
+            // User cancelled or entered empty key, fall back to manual
+            sendToV0Manual(promptText, includeScreenshots);
+          }
+        } else {
+          // User chose to open manually
+          sendToV0Manual(promptText, includeScreenshots);
+        }
+      } else {
+        // Have API key, try SDK integration
+        sendToV0WithSDK(promptText, includeScreenshots);
+      }
+    }
+    
+    /**
+     * Send to v0 using SDK integration (via plugin backend)
+     */
+    function sendToV0WithSDK(promptText, includeScreenshots) {
+      const apiKey = localStorage.getItem('v0ApiKey') || '';
+      
+      // Privacy confirmation for first-time users
+      const hasSeenPrivacyNotice = localStorage.getItem('v0PrivacyNoticeShown');
+      if (!hasSeenPrivacyNotice) {
+        const confirmed = confirm(
+          '⚠️ Privacy Notice\n\n' +
+          'This will send your design specification and screenshots to v0.dev (a third-party service).\n\n' +
+          'By proceeding, you confirm that:\n' +
+          '• You have permission to share this design data\n' +
+          '• You understand v0.dev will process this data\n' +
+          '• Any sensitive/confidential information will be transmitted\n\n' +
+          'Continue?'
+        );
+        
+        if (!confirmed) {
+          return; // User cancelled
+        }
+        
+        // Remember that user has seen the notice
+        localStorage.setItem('v0PrivacyNoticeShown', 'true');
+      }
+      
+      showToast('🚀 Sending to v0.dev...', 'Creating project via v0 SDK');
+      
+      // Send message to plugin backend
+      parent.postMessage({
+        pluginMessage: {
+          type: 'v0-send',
+          data: {
+            prompt: promptText,
+            screenshots: includeScreenshots ? window.screenshots : {},
+            apiKey: apiKey
+          }
+        }
+      }, '*');
+      
+      // Note: Response will be handled by onmessage handler below
+    }
+    
+    /**
+     * Send to v0 manually (opens v0.dev with prompt in URL)
+     */
+    function sendToV0Manual(promptText, includeScreenshots) {
       // Create a more comprehensive v0 message
       let v0Message = '# Design Specification\n\n';
       v0Message += `Generated by Atlas Prompt Compiler on ${new Date().toLocaleDateString()}\n\n`;

@@ -220,11 +220,27 @@ npm run watch
 4. **Review Design System**: Check extracted typography, colors, spacing
 5. **Edit if needed**: Adjust design tokens directly in the UI
 6. **Configure sections**: Choose which parts to include in the prompt
-7. **Edit Prompt** (optional): Refine the generated prompt directly in the editable textarea
+7. **Generate Specification**: Click "Create Specification" to compile the prompt
+8. **Edit Prompt** (optional): Refine the generated prompt directly in the editable textarea
    - Changes are saved automatically as you type
    - Edit any section, add notes, or adjust descriptions
-9. **Copy or Export**: Use the ediile the final specification
-8. **Copy or Export**: Use the generated prompt with v0.dev or similar tools
+9. **Send to v0** (NEW!): Click the 🚀 v0 button to:
+   - Automatically create a v0 project (if API key is configured)
+   - Or open v0.dev with your prompt pre-filled
+10. **Copy or Export**: Use the "Copy" button or export in various formats (TXT, MD, JSON, HTML)
+
+### v0 Quick Start
+
+**First Time Setup**:
+1. Click ⚙️ **Settings** in the plugin header
+2. Enter your v0 API key from [v0.dev](https://v0.dev) (Settings → API Keys)
+3. Click OK to save
+
+**Every Time**:
+1. Generate your specification
+2. Toggle "Include screenshots" if desired
+3. Click 🚀 **v0** button
+4. Your project opens automatically in v0.dev!
 
 ### Tips
 
@@ -233,11 +249,14 @@ npm run watch
 - **Design Consistency**: Pay attention to consistency warnings—they indicate opportunities to simplify your design system
 - **Component Naming**: Name your components clearly; the plugin uses these names in the output
 - **Auto Layout**: Plugin prefers Auto Layout data over absolute positioning for better accuracy
+- **v0 Integration**: Include screenshots for better AI-generated results
+- **API Key Security**: Your v0 API key is stored locally in your browser only
 
 ## Technology Stack
 
 - **TypeScript**: Type-safe plugin development
 - **Figma Plugin API**: Direct access to design properties
+- **v0 SDK**: Direct integration with Vercel's v0 platform
 - **No Dependencies**: Minimal runtime dependencies for fast execution
 
 ## Project Structure
@@ -285,18 +304,98 @@ The plugin does NOT generate UI code directly. Instead, it produces structured s
 - Screenshot export requires frames to be visible in viewport
 - Color contrast checking is informational (not computed)
 - Does not handle animations or advanced interactions
-- Network access disabled (no external API calls)
+- v0 SDK screenshot attachment requires external image hosting (currently screenshots are included inline in the prompt)
+
+## v0 Integration
+
+Atlas now includes **direct integration with v0.dev** using the v0 SDK! This allows you to automatically send your design specifications and create v0 projects with a single click.
+
+### Features
+
+- **Automatic Project Creation**: Send prompts directly to v0.dev via the SDK
+- **Screenshot Support**: Include design screenshots for better context
+- **API Key Management**: Secure storage of your v0 API key in browser localStorage
+- **Smart Fallback**: Automatically uses manual v0.dev URL method (current) with future SDK integration planned
+
+### Current Implementation
+
+**Note**: Due to Figma's plugin sandbox environment limitations, the v0 SDK cannot currently be used directly within the plugin. The current implementation uses an enhanced manual method that:
+
+1. Prepares your prompt with design specifications
+2. Includes screenshots as context
+3. Opens v0.dev with the prompt pre-filled
+4. Copies everything to clipboard for easy pasting
+
+**Future Enhancement**: We're planning to add a server-side proxy to enable true SDK integration, which will allow automatic project creation and return direct links to generated v0 projects.
+
+### Setup
+
+1. **Get your v0 API Key** (optional for now):
+   - Visit [v0.dev](https://v0.dev)
+   - Go to Settings → API Keys
+   - Create a new API key
+
+2. **Configure the Plugin** (optional):
+   - Click the ⚙️ **Settings** button in the plugin header
+   - Enter your v0 API key when prompted
+   - The key is stored securely in your browser's localStorage
+   - Note: Currently used for future SDK integration
+
+### Usage
+
+1. Generate your design specification as usual
+2. Click the 🚀 **v0** button in the prompt header
+3. The plugin will:
+   - Copy your prompt and screenshots to clipboard
+   - Open v0.dev with the prompt pre-filled
+   - Allow you to paste screenshots directly into v0 chat
+
+### How It Works (Current)
+
+The current implementation uses an enhanced manual workflow:
+
+1. User clicks the 🚀 **v0** button
+2. Plugin prepares comprehensive prompt with design specifications
+3. Optionally includes screenshot context in the message
+4. Opens v0.dev with the prompt as a URL parameter
+5. Copies full prompt + screenshots to clipboard
+6. User can paste screenshots directly into v0 chat for visual reference
+
+**Planned Enhancement**: Direct SDK integration via server proxy will enable:
+- Automatic v0 project creation without manual steps
+- Direct screenshot attachment as URLs
+- Instant return link to generated project
+- No clipboard/paste required
+
+### API Key Security
+
+- **Local Storage**: API keys are stored in your browser's localStorage (ready for future SDK integration)
+- **Not Committed**: Keys are never committed to the repository
+- **User-Controlled**: You can view, update, or remove your key anytime via Settings
+- **Security Warnings**: Clear notices about storage and security implications
+- **Privacy First**: Consent required before sending data to v0.dev
+
+### Troubleshooting
+
+**"Direct v0 SDK integration is not available"**: This is expected. The plugin currently uses the enhanced manual method (opens v0.dev with prompt). Full SDK integration is planned for a future update.
+
+**Prompt not appearing in v0**: Very long prompts may be truncated in URL. Use the "Copy" button and paste into v0.dev manually.
+
+**Screenshots not appearing in v0**: Paste screenshots from clipboard into v0 chat after the page opens. The plugin copies them automatically.
 
 ## Future Enhancements
 
 Potential improvements:
+- [x] Basic v0.dev integration (enhanced manual method)
+- [ ] **Server-side proxy for full v0 SDK integration**
+- [ ] **Automatic screenshot upload to image hosting**
+- [ ] Direct v0 project creation with instant links
 - [ ] Component library integration
 - [ ] Variant detection and documentation
 - [ ] Animation/transition specifications
 - [ ] Dark mode theme extraction
 - [ ] Export to multiple formats (JSON, Markdown, etc.)
 - [ ] Design diff comparison
-- [ ] Direct integration with code generation APIs
 
 ## Contributing
 
